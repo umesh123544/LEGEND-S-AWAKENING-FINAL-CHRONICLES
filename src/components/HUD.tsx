@@ -52,11 +52,15 @@ export const HUD: React.FC<HUDProps> = ({
     <div id="hud-container" className="absolute inset-0 pointer-events-none select-none overflow-hidden font-['Rajdhani']">
       {/* Top Bar Header Area */}
       <div
-        className="absolute top-0 w-full z-30 px-3 sm:px-8 pt-3 sm:pt-6 flex justify-between items-start"
-        style={{ paddingTop: 'max(12px, env(safe-area-inset-top, 12px))' }}
+        className="absolute top-0 w-full z-30 px-3 sm:px-8 pt-3 sm:pt-6 flex justify-between items-start gap-2"
+        style={{
+          paddingTop: 'max(12px, env(safe-area-inset-top, 12px))',
+          paddingLeft: 'max(12px, env(safe-area-inset-left, 12px))',
+          paddingRight: 'max(12px, env(safe-area-inset-right, 12px))',
+        }}
       >
         {/* --- TOP-LEFT: HERO VITAL STATUS (Responsive Glass Panel) --- */}
-        <div id="hero-vital-panel" className="glass-panel p-2.5 sm:p-4 rounded-xl sm:rounded-2xl flex items-center gap-2.5 sm:gap-3.5 w-48 sm:w-64 md:w-80 pointer-events-auto shadow-2xl">
+        <div id="hero-vital-panel" className="glass-panel p-2.5 sm:p-4 rounded-xl sm:rounded-2xl flex items-center gap-2.5 sm:gap-3.5 w-36 sm:w-64 md:w-80 shrink min-w-0 pointer-events-auto shadow-2xl">
           {/* Circular Hero Emblem with Cyan Aura Glow */}
           <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full border-2 border-cyan-400 overflow-hidden bg-slate-900/90 flex items-center justify-center relative shrink-0 hero-glow">
             <div className="w-6 h-6 sm:w-8 sm:h-8 bg-cyan-400 rounded-sm rotate-45 hero-glow flex items-center justify-center">
@@ -102,8 +106,8 @@ export const HUD: React.FC<HUDProps> = ({
 
         {/* --- TOP-CENTER: BOSS HEALTH BAR (When Boss Active) --- */}
         {bossState ? (
-          <div id="boss-health-bar" className="flex flex-col items-center gap-1.5 pointer-events-none animate-in fade-in duration-300 max-w-sm sm:max-w-md w-full px-2">
-            <div className="text-xs font-bold tracking-[0.4em] text-red-500 uppercase drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]">
+          <div id="boss-health-bar" className="flex flex-col items-center gap-1.5 pointer-events-none animate-in fade-in duration-300 max-w-[calc(100vw-11rem)] sm:max-w-md w-full min-w-0 px-2">
+            <div className="text-[9px] sm:text-xs font-bold tracking-[0.15em] sm:tracking-[0.4em] text-red-500 uppercase drop-shadow-[0_0_8px_rgba(239,68,68,0.6)] truncate max-w-full text-center">
               {bossState.name}
             </div>
             <div className="w-full sm:w-[480px] h-3.5 sm:h-4 bg-slate-900/90 rounded-full overflow-hidden border border-red-900/50 relative boss-glow">
@@ -118,7 +122,7 @@ export const HUD: React.FC<HUDProps> = ({
                 <div className="w-px h-full bg-white/10" />
               </div>
             </div>
-            <div className="text-[10px] opacity-60 uppercase tracking-widest text-red-300 font-mono">
+            <div className="text-[9px] sm:text-[10px] opacity-60 uppercase tracking-tight sm:tracking-widest text-red-300 font-mono truncate max-w-full text-center">
               Phase {bossState.phase || 1}: Shadow Resonance
             </div>
           </div>
@@ -141,7 +145,7 @@ export const HUD: React.FC<HUDProps> = ({
         )}
 
         {/* --- TOP-RIGHT: UTILITY CONTROLS --- */}
-        <div className="flex items-center gap-2 pointer-events-auto">
+        <div className="flex items-center gap-2 pointer-events-auto shrink-0">
           <button
             id="btn-toggle-audio"
             onClick={onToggleMute}
@@ -164,11 +168,15 @@ export const HUD: React.FC<HUDProps> = ({
 
       {/* --- COMBO COUNTER --- */}
       {comboCount > 1 && (
-        <div id="combo-counter-panel" className="absolute top-28 right-6 pointer-events-none animate-bounce text-right">
-          <div className="text-3xl sm:text-5xl font-black text-amber-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,191,36,0.8)] font-['Orbitron']">
+        <div
+          id="combo-counter-panel"
+          className="absolute right-3 sm:right-6 pointer-events-none animate-bounce text-right max-w-[55vw]"
+          style={{ top: 'max(88px, calc(env(safe-area-inset-top, 0px) + 78px))' }}
+        >
+          <div className="text-xl sm:text-3xl md:text-5xl font-black text-amber-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,191,36,0.8)] font-['Orbitron']">
             {comboCount} HITS!
           </div>
-          <div className="text-xs font-bold text-cyan-300 tracking-widest uppercase">
+          <div className="text-[9px] sm:text-xs font-bold text-cyan-300 tracking-widest uppercase truncate">
             AURA SURGE x{(1 + comboCount * 0.1).toFixed(1)}
           </div>
         </div>
@@ -253,7 +261,7 @@ export const HUD: React.FC<HUDProps> = ({
               id="btn-action-dash"
               onClick={onDash}
               disabled={abilityCooldowns.auraDash > 0}
-              className="w-10 h-10 sm:w-13 sm:h-13 glass-panel rounded-full flex flex-col items-center justify-center border-white/10 hover:border-cyan-400/50 active:scale-95 transition-all text-cyan-300 disabled:opacity-40"
+              className="w-10 h-10 sm:w-12 sm:h-12 glass-panel rounded-full flex flex-col items-center justify-center border-white/10 hover:border-cyan-400/50 active:scale-95 transition-all text-cyan-300 disabled:opacity-40"
               title="Aura Dash [Space]"
             >
               <div className="hidden sm:block text-[8px] font-bold text-white/50 mb-0.5 font-mono">SPC</div>
@@ -267,7 +275,7 @@ export const HUD: React.FC<HUDProps> = ({
               id="btn-ability-q"
               onClick={onAbilityQ}
               disabled={abilityCooldowns.energySlash > 0}
-              className="w-10 h-10 sm:w-13 sm:h-13 glass-panel rounded-full flex flex-col items-center justify-center border-white/10 hover:border-cyan-400/50 active:scale-95 transition-all text-cyan-300 disabled:opacity-40"
+              className="w-10 h-10 sm:w-12 sm:h-12 glass-panel rounded-full flex flex-col items-center justify-center border-white/10 hover:border-cyan-400/50 active:scale-95 transition-all text-cyan-300 disabled:opacity-40"
               title="Energy Slash [Q]"
             >
               <div className="hidden sm:block text-[8px] font-bold text-white/50 mb-0.5 font-mono">Q</div>
@@ -281,7 +289,7 @@ export const HUD: React.FC<HUDProps> = ({
               id="btn-ability-e"
               onClick={onAbilityE}
               disabled={abilityCooldowns.groundBreaker > 0}
-              className="w-10 h-10 sm:w-13 sm:h-13 glass-panel rounded-full flex flex-col items-center justify-center border-white/10 hover:border-cyan-400/50 active:scale-95 transition-all text-cyan-300 disabled:opacity-40"
+              className="w-10 h-10 sm:w-12 sm:h-12 glass-panel rounded-full flex flex-col items-center justify-center border-white/10 hover:border-cyan-400/50 active:scale-95 transition-all text-cyan-300 disabled:opacity-40"
               title="Ground Breaker [E]"
             >
               <div className="hidden sm:block text-[8px] font-bold text-white/50 mb-0.5 font-mono">E</div>
@@ -300,7 +308,7 @@ export const HUD: React.FC<HUDProps> = ({
               onMouseUp={onShieldEnd}
               onTouchStart={onShieldStart}
               onTouchEnd={onShieldEnd}
-              className="w-11 h-11 sm:w-13 sm:h-13 glass-panel rounded-xl flex flex-col items-center justify-center border-white/10 hover:border-cyan-400/50 active:scale-95 transition-all text-cyan-300 group"
+              className="w-11 h-11 sm:w-12 sm:h-12 glass-panel rounded-xl flex flex-col items-center justify-center border-white/10 hover:border-cyan-400/50 active:scale-95 transition-all text-cyan-300 group"
               title="Hold Shield [Right Click]"
             >
               <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-300 group-hover:scale-110 transition-transform" />
@@ -311,7 +319,7 @@ export const HUD: React.FC<HUDProps> = ({
             <button
               id="btn-action-attack"
               onClick={onAttack}
-              className="w-13 h-13 sm:w-14 sm:h-14 glass-panel rounded-2xl flex flex-col items-center justify-center border-2 border-cyan-400/40 hover:border-cyan-400 active:scale-95 transition-all text-cyan-300 shadow-[0_0_15px_rgba(0,240,255,0.25)] group"
+              className="w-12 h-12 sm:w-14 sm:h-14 glass-panel rounded-2xl flex flex-col items-center justify-center border-2 border-cyan-400/40 hover:border-cyan-400 active:scale-95 transition-all text-cyan-300 shadow-[0_0_15px_rgba(0,240,255,0.25)] group"
               title="Blade Combo [Left Click]"
             >
               <Sword className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-300 group-hover:scale-110 transition-transform" />

@@ -21,7 +21,7 @@ export const ChapterVictoryModal: React.FC<ChapterVictoryModalProps> = ({
       id="chapter-victory-modal-overlay"
       className="absolute inset-0 z-50 bg-[#050508]/85 backdrop-blur-md flex items-center justify-center p-4 font-['Rajdhani'] animate-in zoom-in-95 duration-300"
     >
-      <div className="max-w-lg w-full glass-panel border border-emerald-500/40 rounded-3xl p-6 sm:p-8 text-center shadow-2xl">
+      <div className="max-w-lg w-full glass-panel border border-emerald-500/40 rounded-3xl p-6 sm:p-8 text-center shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="inline-flex items-center justify-center p-3.5 rounded-2xl glass-panel border-emerald-400/40 mb-4 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
           <Trophy className="w-10 h-10 text-emerald-300" />
         </div>

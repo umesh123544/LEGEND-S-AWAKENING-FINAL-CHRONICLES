@@ -289,7 +289,7 @@ export default function App() {
     : 'Eliminate Dark Invaders';
 
   return (
-    <div id="game-app-root" className="relative w-screen h-screen overflow-hidden bg-black select-none">
+    <div id="game-app-root" className="relative w-screen h-dvh overflow-hidden bg-black select-none">
       {/* 3D WebGL Canvas Viewport */}
       <div
         id="game-canvas-container"

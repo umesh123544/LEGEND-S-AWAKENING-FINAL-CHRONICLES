@@ -25,7 +25,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   return (
     <div
       id="main-menu-screen"
-      className="relative w-full h-full flex flex-col justify-between overflow-hidden bg-[#050508] text-white font-['Rajdhani'] select-none"
+      className="relative w-full h-full flex flex-col justify-between overflow-y-auto overflow-x-hidden bg-[#050508] text-white font-['Rajdhani'] select-none"
     >
       {/* Dynamic Visual Split Background (Hero Cyan Glow vs Villain Red Glow) */}
       <div className="absolute inset-0 flex pointer-events-none">

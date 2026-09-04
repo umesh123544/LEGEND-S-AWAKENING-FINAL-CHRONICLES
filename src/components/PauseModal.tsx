@@ -19,7 +19,7 @@ export const PauseModal: React.FC<PauseModalProps> = ({
       id="pause-modal-overlay"
       className="absolute inset-0 z-50 bg-[#050508]/85 backdrop-blur-md flex items-center justify-center p-4 font-['Rajdhani']"
     >
-      <div className="max-w-sm w-full glass-panel border border-cyan-400/40 rounded-3xl p-6 sm:p-8 text-center shadow-2xl hero-glow">
+      <div className="max-w-sm w-full glass-panel border border-cyan-400/40 rounded-3xl p-6 sm:p-8 text-center shadow-2xl hero-glow max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl sm:text-3xl font-black text-white font-['Orbitron'] tracking-wider mb-1">
           TACTICAL PAUSE
         </h2>

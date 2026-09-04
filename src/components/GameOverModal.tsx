@@ -12,7 +12,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({ onRetry, onMainMen
       id="gameover-modal-overlay"
       className="absolute inset-0 z-50 bg-[#050508]/90 backdrop-blur-md flex items-center justify-center p-4 font-['Rajdhani'] animate-in zoom-in-95 duration-300"
     >
-      <div className="max-w-md w-full glass-panel border border-red-500/40 rounded-3xl p-6 sm:p-8 text-center boss-glow">
+      <div className="max-w-md w-full glass-panel border border-red-500/40 rounded-3xl p-6 sm:p-8 text-center boss-glow max-h-[90vh] overflow-y-auto">
         <div className="inline-flex items-center justify-center p-3.5 rounded-2xl glass-panel-crimson border-red-500/50 mb-4 boss-glow">
           <Skull className="w-10 h-10 text-red-500 animate-pulse" />
         </div>

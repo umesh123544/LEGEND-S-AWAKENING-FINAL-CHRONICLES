@@ -23,6 +23,14 @@ export interface CharacterRig {
   currentAction?: string;
   characterType: string;
   silhouetteMesh?: THREE.Group;
+  /** Reference to the mounted custom GLB mesh (when it has no internal skeleton/animations),
+   *  used to apply procedural whole-body motion: walk bob/lean, attack lunge, idle breathing. */
+  meshGroup?: THREE.Group;
+  meshBasePosition?: THREE.Vector3;
+  meshBaseRotationY?: number;
+  /** True when the mounted GLB has no bone-driven animation clips, so the engine should
+   *  drive procedural whole-body motion on meshGroup instead of relying on the mixer. */
+  needsProceduralMotion?: boolean;
 }
 
 /**
@@ -1143,6 +1151,32 @@ export function createHeroCharacter(): CharacterRig {
         silhouette.body.visible = false;
         rig.root.add(clonedModel);
         rig.isAssetLoaded = true;
+        rig.meshGroup = clonedModel;
+        rig.meshBasePosition = clonedModel.position.clone();
+        rig.meshBaseRotationY = clonedModel.rotation.y;
+
+        // Re-anchor the weapon and shield onto dedicated hand points attached directly to the
+        // rig root (rather than the now-hidden silhouette arms) so they stay visible and keep
+        // swinging with the existing walk/attack swing logic, regardless of whether the mounted
+        // model has its own skeleton.
+        const rightHandAnchor = new THREE.Group();
+        rightHandAnchor.position.set(-0.42, 1.52, 0);
+        const leftHandAnchor = new THREE.Group();
+        leftHandAnchor.position.set(0.42, 1.52, 0);
+        rig.root.add(rightHandAnchor, leftHandAnchor);
+
+        weaponGroup.position.set(0, -0.42, 0.14);
+        weaponGroup.rotation.set(Math.PI / 2, 0, 0);
+        rightHandAnchor.add(weaponGroup);
+
+        shieldGroup.position.set(0.12, -0.32, 0.15);
+        shieldGroup.rotation.set(0, Math.PI / 4, 0);
+        leftHandAnchor.add(shieldGroup);
+
+        // Existing GameEngine walk/attack code animates rig.leftArm / rig.rightArm rotation —
+        // point those at the new visible hand anchors instead of the hidden silhouette arms.
+        rig.rightArm = rightHandAnchor;
+        rig.leftArm = leftHandAnchor;
 
         // Setup AnimationMixer if clips are provided
         if (gltf.animations && gltf.animations.length > 0) {
@@ -1160,6 +1194,10 @@ export function createHeroCharacter(): CharacterRig {
             idleAction.play();
             rig.currentAction = 'idle';
           }
+        } else {
+          // No baked animations on this model (e.g. a static/unrigged custom mesh) — drive
+          // procedural whole-body motion instead so walking/attacking still reads as motion.
+          rig.needsProceduralMotion = true;
         }
       } catch (err) {
         console.warn('Failed mounting hero.glb model:', err);

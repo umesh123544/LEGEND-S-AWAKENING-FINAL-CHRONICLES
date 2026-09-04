@@ -972,6 +972,66 @@ export class GameEngine {
       }
     }
 
+    // --- Procedural whole-body motion for the mounted custom mesh ---
+    // Used when the loaded GLB has no bone-driven animation clips (e.g. a static/unrigged
+    // custom model): fakes walk bob/lean, attack lunge + spin, block crouch, dodge dip,
+    // idle breathing and a death topple directly on the mesh transform, so it still reads
+    // as a moving, fighting character rather than a frozen statue. The weapon/shield still
+    // swing via the hand-anchor rotations above; this adds motion to the body itself.
+    if (this.heroRig.needsProceduralMotion && this.heroRig.meshGroup && this.heroRig.meshBasePosition) {
+      const mesh = this.heroRig.meshGroup;
+      const basePos = this.heroRig.meshBasePosition;
+      const baseRotY = this.heroRig.meshBaseRotationY ?? 0;
+
+      if (this.playerStats.hp <= 0) {
+        // Death: topple forward and settle to the ground
+        mesh.rotation.x = THREE.MathUtils.lerp(mesh.rotation.x, Math.PI / 2, dt * 3);
+        mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, basePos.y - 0.35, dt * 3);
+      } else if (this.isAttacking) {
+        const progress = Math.min(1, this.attackAnimTime / 0.35);
+        const lunge = Math.sin(progress * Math.PI) * 0.22;
+        mesh.position.z = basePos.z + lunge;
+        mesh.position.y = basePos.y + Math.abs(Math.sin(progress * Math.PI)) * 0.05;
+        mesh.rotation.x = THREE.MathUtils.lerp(mesh.rotation.x, Math.sin(progress * Math.PI) * 0.18, dt * 25);
+        if (this.comboStep === 3) {
+          // Heavy attack: full body spin to match the 360 sword swing
+          mesh.rotation.y = baseRotY + progress * Math.PI * 2;
+        } else {
+          mesh.rotation.y = THREE.MathUtils.lerp(
+            mesh.rotation.y,
+            baseRotY + (this.comboStep === 1 ? -0.28 : 0.22),
+            dt * 20
+          );
+        }
+      } else if (this.isBlocking) {
+        mesh.rotation.x = THREE.MathUtils.lerp(mesh.rotation.x, 0.14, dt * 10);
+        mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, basePos.y - 0.05, dt * 10);
+        mesh.rotation.y = THREE.MathUtils.lerp(mesh.rotation.y, baseRotY, dt * 10);
+        mesh.position.z = THREE.MathUtils.lerp(mesh.position.z, basePos.z, dt * 10);
+      } else if (this.isDashing) {
+        mesh.rotation.x = THREE.MathUtils.lerp(mesh.rotation.x, 0.32, dt * 15);
+        mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, basePos.y + 0.05, dt * 15);
+      } else if (isMoving) {
+        const strideSpeed = this.isSprinting ? 14 : 10;
+        const bobHeight = this.isSprinting ? 0.09 : 0.06;
+        mesh.position.y = basePos.y + Math.abs(Math.sin(t * strideSpeed)) * bobHeight;
+        mesh.rotation.z = Math.sin(t * strideSpeed) * 0.05;
+        mesh.rotation.x = THREE.MathUtils.lerp(mesh.rotation.x, this.isSprinting ? 0.15 : 0.07, dt * 8);
+        mesh.rotation.y = THREE.MathUtils.lerp(mesh.rotation.y, baseRotY, dt * 8);
+        mesh.position.z = THREE.MathUtils.lerp(mesh.position.z, basePos.z, dt * 8);
+      } else if (this.victoryTriggered) {
+        mesh.position.y = basePos.y + Math.abs(Math.sin(t * 6)) * 0.12;
+        mesh.rotation.x = THREE.MathUtils.lerp(mesh.rotation.x, 0, dt * 6);
+      } else {
+        // Idle breathing sway
+        mesh.position.y = basePos.y + Math.sin(t * 1.6) * 0.012;
+        mesh.rotation.x = THREE.MathUtils.lerp(mesh.rotation.x, 0, dt * 6);
+        mesh.rotation.y = THREE.MathUtils.lerp(mesh.rotation.y, baseRotY + Math.sin(t * 0.8) * 0.02, dt * 4);
+        mesh.rotation.z = THREE.MathUtils.lerp(mesh.rotation.z, 0, dt * 6);
+        mesh.position.z = THREE.MathUtils.lerp(mesh.position.z, basePos.z, dt * 6);
+      }
+    }
+
     // Sword Attack Slashing
     if (this.isAttacking) {
       this.attackAnimTime += dt;
