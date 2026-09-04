@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background-color: #050508;
+  color: #ffffff;
+  font-family: 'Rajdhani', sans-serif;
+  overflow: hidden;
+}
+
+.glass-panel {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-panel-cyan {
+  background: rgba(8, 28, 44, 0.7);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+}
+
+.glass-panel-crimson {
+  background: rgba(36, 10, 16, 0.7);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.hero-glow {
+  box-shadow: 0 0 35px 8px rgba(34, 211, 238, 0.35);
+}
+
+.boss-glow {
+  box-shadow: 0 0 45px 12px rgba(239, 68, 68, 0.3);
+}
+
+.health-bar {
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+}
+
+.energy-bar {
+  background: linear-gradient(90deg, #06b6d4 0%, #3b82f6 100%);
+}
+
+.boss-health-bar {
+  background: linear-gradient(90deg, #ef4444 0%, #b91c1c 100%);
+}
