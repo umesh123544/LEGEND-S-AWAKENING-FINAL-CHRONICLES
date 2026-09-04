@@ -138,25 +138,34 @@ export class GameEngine {
   }
 
   private setupLighting() {
-    const ambient = new THREE.AmbientLight(0x223344, 1.4);
+    // Ambient light
+    const ambient = new THREE.AmbientLight(0x0e1b2e, 1.2);
     this.scene.add(ambient);
 
-    const sun = new THREE.DirectionalLight(0xaaccff, 2.0);
-    sun.position.set(20, 40, 20);
+    // Hemisphere light: Cyan Sky / Deep Navy Ground
+    const hemiLight = new THREE.HemisphereLight(0x00f0ff, 0x050c18, 1.25);
+    hemiLight.position.set(0, 50, 0);
+    this.scene.add(hemiLight);
+
+    // Directional Sun with cinematic soft shadows
+    const sun = new THREE.DirectionalLight(0xaad8ff, 2.2);
+    sun.position.set(25, 45, 25);
     sun.castShadow = true;
     sun.shadow.mapSize.width = 2048;
     sun.shadow.mapSize.height = 2048;
     sun.shadow.camera.near = 0.5;
-    sun.shadow.camera.far = 150;
-    const d = 35;
+    sun.shadow.camera.far = 160;
+    const d = 40;
     sun.shadow.camera.left = -d;
     sun.shadow.camera.right = d;
     sun.shadow.camera.top = d;
     sun.shadow.camera.bottom = -d;
+    sun.shadow.bias = -0.0005;
     this.scene.add(sun);
 
-    const cyanPoint = new THREE.PointLight(0x00f0ff, 2.5, 20);
-    cyanPoint.position.set(0, 3, 0);
+    // Subtle Cyan Aura Point Light following the Hero
+    const cyanPoint = new THREE.PointLight(0x00f0ff, 3.0, 18);
+    cyanPoint.position.set(0, 2.2, 0);
     this.heroRig.root.add(cyanPoint);
   }
 
@@ -260,6 +269,11 @@ export class GameEngine {
     const bossRig = createDreadLordCharacter();
     bossRig.root.position.set(0, 0, 22);
     this.scene.add(bossRig.root);
+
+    // Villain Crimson Aura Point Light
+    const bossAura = new THREE.PointLight(0xff002b, 4.0, 25);
+    bossAura.position.set(0, 3.5, 0);
+    bossRig.root.add(bossAura);
 
     const state: EnemyState = {
       id: 'dread_lord_boss',
@@ -749,6 +763,11 @@ export class GameEngine {
     // Hero Movement
     this.updateHeroMovement(dt);
 
+    // World animation (flying cyber traffic, particles)
+    if (this.world) {
+      this.world.update(dt);
+    }
+
     // Hero Animation
     this.updateHeroAnimation(dt);
 
@@ -815,6 +834,11 @@ export class GameEngine {
   private updateHeroAnimation(dt: number) {
     this.heroRig.animTime += dt;
     const t = this.heroRig.animTime;
+
+    // GLTF Animation Mixer update when GLB model is active
+    if (this.heroRig.mixer) {
+      this.heroRig.mixer.update(dt);
+    }
 
     // Breathing / Idle Core Pulse
     if (this.heroRig.coreMesh) {
@@ -885,6 +909,10 @@ export class GameEngine {
     const heroPos = this.heroRig.root.position;
 
     for (const enemy of this.enemies) {
+      if (enemy.rig.mixer) {
+        enemy.rig.mixer.update(dt);
+      }
+
       if (enemy.state.state === 'dead') {
         // Fade out
         enemy.mesh.position.y -= dt * 0.8;
@@ -1044,6 +1072,20 @@ export class GameEngine {
   }
 
   private updateCamera(dt: number) {
+    // Dynamic combat zoom (5-7 meters behind Hero)
+    if (!this.isUltimateActive) {
+      const heroPos = this.heroRig.root.position;
+      let hasNearEnemy = false;
+      for (let i = 0; i < this.enemies.length; i++) {
+        const e = this.enemies[i];
+        if (e.state.state !== 'dead' && e.mesh.position.distanceTo(heroPos) < 7.0) {
+          hasNearEnemy = true;
+          break;
+        }
+      }
+      this.targetCameraDistance = hasNearEnemy ? 5.4 : 6.6;
+    }
+
     // Smooth camera distance lerp
     this.cameraDistance = THREE.MathUtils.lerp(this.cameraDistance, this.targetCameraDistance, dt * 6);
 

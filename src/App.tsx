@@ -24,11 +24,16 @@ import { ChapterSelectModal } from './components/ChapterSelectModal';
 import { SettingsModal } from './components/SettingsModal';
 import { PauseModal } from './components/PauseModal';
 import { VirtualJoystick } from './components/VirtualJoystick';
+import { LoadingScreen } from './components/LoadingScreen';
+import { assetManager } from './game/AssetManager';
 
 export default function App() {
   // Screen States
   const [screen, setScreen] = useState<'menu' | 'playing'>('menu');
   const [isPaused, setIsPaused] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingStatus, setLoadingStatus] = useState('Initializing A.U.R.A. Matrix...');
 
   // Modals
   const [isCharacterModalOpen, setIsCharacterModalOpen] = useState(false);
@@ -85,25 +90,53 @@ export default function App() {
     []
   );
 
-  // Start / Deploy a Chapter
+  // Start / Deploy a Chapter with cinematic loading screen
   const deployChapter = useCallback(
     (chapterId: number) => {
-      setCurrentChapter(chapterId);
-      setScreen('playing');
-      setIsPaused(false);
-      setIsVictoryModalOpen(false);
-      setIsGameOverModalOpen(false);
-      setBossState(null);
-      setComboCount(0);
-      setDamageNumbers([]);
+      setIsLoading(true);
+      setLoadingProgress(10);
+      setLoadingStatus('Initializing A.U.R.A. 3D Combat Pipeline...');
 
-      // Trigger story cutscene if chapter has dialogue
-      const dialogues = CHAPTER_DIALOGUES[chapterId];
-      if (dialogues && dialogues.length > 0) {
-        setActiveDialogue(dialogues);
-      } else {
-        setActiveDialogue(null);
-      }
+      // Progressive simulated and asset-tracked loading stages
+      setTimeout(() => {
+        setLoadingProgress(35);
+        setLoadingStatus(chapterId >= 4 ? 'Loading Abyssal Citadel & Void Geometry...' : 'Loading Futuristic Cyber City & Neon Skylines...');
+      }, 300);
+
+      setTimeout(() => {
+        setLoadingProgress(68);
+        setLoadingStatus('Synthesizing Hero Exosuit, Energy Sword & Hologram Shield...');
+      }, 650);
+
+      setTimeout(() => {
+        setLoadingProgress(92);
+        setLoadingStatus('Calibrating Enemy Entities & Dread Lord AI Systems...');
+      }, 1000);
+
+      setTimeout(() => {
+        setLoadingProgress(100);
+        setLoadingStatus('Sector Synchronized. Entering Battlefield.');
+
+        setTimeout(() => {
+          setIsLoading(false);
+          setCurrentChapter(chapterId);
+          setScreen('playing');
+          setIsPaused(false);
+          setIsVictoryModalOpen(false);
+          setIsGameOverModalOpen(false);
+          setBossState(null);
+          setComboCount(0);
+          setDamageNumbers([]);
+
+          // Trigger story cutscene if chapter has dialogue
+          const dialogues = CHAPTER_DIALOGUES[chapterId];
+          if (dialogues && dialogues.length > 0) {
+            setActiveDialogue(dialogues);
+          } else {
+            setActiveDialogue(null);
+          }
+        }, 350);
+      }, 1300);
     },
     []
   );
@@ -348,6 +381,10 @@ export default function App() {
       )}
 
       {/* --- GLOBAL MODALS --- */}
+      {isLoading && (
+        <LoadingScreen progress={loadingProgress} statusText={loadingStatus} />
+      )}
+
       {isLevelUpModalOpen && (
         <LevelUpModal
           stats={playerStats}

@@ -1,35 +1,62 @@
 import * as THREE from 'three';
+import { assetManager } from './AssetManager';
 
-// Procedural texture generators for futuristic sci-fi materials
-function createHexShieldTexture(): THREE.CanvasTexture {
+export interface CharacterRig {
+  root: THREE.Group;
+  body: THREE.Group;
+  head: THREE.Group;
+  leftArm: THREE.Group;
+  rightArm: THREE.Group;
+  leftLeg: THREE.Group;
+  rightLeg: THREE.Group;
+  weapon: THREE.Group;
+  shield?: THREE.Group;
+  coreMesh?: THREE.Mesh;
+  swordGlow?: THREE.Mesh;
+  shieldGlow?: THREE.Mesh;
+  animTime: number;
+  isHero: boolean;
+  isAssetLoaded: boolean;
+  assetPath: string;
+  mixer?: THREE.AnimationMixer;
+  actions?: Record<string, THREE.AnimationAction>;
+  currentAction?: string;
+  characterType: string;
+  silhouetteMesh?: THREE.Group;
+}
+
+/**
+ * Creates a glowing holographic shield texture with animated concentric rings and hexagonal lattice.
+ */
+export function createHexShieldTexture(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 512;
   const ctx = canvas.getContext('2d')!;
 
-  // Transparent dark cyan background
-  ctx.fillStyle = 'rgba(0, 20, 30, 0.2)';
+  // Transparent cyber backdrop
+  ctx.fillStyle = 'rgba(2, 12, 24, 0.25)';
   ctx.fillRect(0, 0, 512, 512);
 
-  // Draw glowing concentric rings
-  ctx.strokeStyle = '#00e5ff';
-  ctx.lineWidth = 4;
+  // Outer glowing pulse rings
+  ctx.strokeStyle = '#00f7ff';
+  ctx.lineWidth = 5;
   ctx.shadowColor = '#00f7ff';
-  ctx.shadowBlur = 12;
+  ctx.shadowBlur = 16;
 
   ctx.beginPath();
-  ctx.arc(256, 256, 120, 0, Math.PI * 2);
+  ctx.arc(256, 256, 220, 0, Math.PI * 2);
   ctx.stroke();
 
   ctx.beginPath();
-  ctx.arc(256, 256, 200, 0, Math.PI * 2);
+  ctx.arc(256, 256, 140, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Hexagonal grid
-  const hexSize = 28;
+  // Hexagonal honeycomb barrier lines
+  const hexSize = 32;
   const h = hexSize * Math.sqrt(3);
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(0, 240, 255, 0.7)';
 
   for (let y = 0; y < 512 + h; y += h) {
     let row = 0;
@@ -57,7 +84,178 @@ function createHexShieldTexture(): THREE.CanvasTexture {
   return texture;
 }
 
-export interface CharacterRig {
+/**
+ * Creates a futuristic plasma energy sword weapon attachment.
+ */
+export function createFuturisticEnergySword(): { weaponGroup: THREE.Group; bladeGlow: THREE.Mesh } {
+  const weapon = new THREE.Group();
+
+  // Hilt
+  const hiltGeo = new THREE.CylinderGeometry(0.025, 0.035, 0.32, 12);
+  const hiltMat = new THREE.MeshStandardMaterial({
+    color: 0x081320,
+    metalness: 0.95,
+    roughness: 0.2,
+  });
+  const hilt = new THREE.Mesh(hiltGeo, hiltMat);
+  weapon.add(hilt);
+
+  // Emitter Crossguard (Angular cyber wings)
+  const emitterGroup = new THREE.Group();
+  emitterGroup.position.y = 0.16;
+  weapon.add(emitterGroup);
+
+  const ringGeo = new THREE.TorusGeometry(0.06, 0.015, 8, 16);
+  const glowMat = new THREE.MeshStandardMaterial({
+    color: 0x00f0ff,
+    emissive: 0x00f0ff,
+    emissiveIntensity: 3.0,
+    roughness: 0.1,
+  });
+  const emitterRing = new THREE.Mesh(ringGeo, glowMat);
+  emitterRing.rotation.x = Math.PI / 2;
+  emitterGroup.add(emitterRing);
+
+  // Plasma Katana / Energy Blade (Sleek elongated tapered curve)
+  const bladeCoreGeo = new THREE.ConeGeometry(0.045, 1.45, 8);
+  bladeCoreGeo.rotateX(Math.PI);
+  bladeCoreGeo.translate(0, 0.72, 0);
+
+  const coreMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    emissive: 0x00e5ff,
+    emissiveIntensity: 3.5,
+    roughness: 0.05,
+  });
+  const bladeCore = new THREE.Mesh(bladeCoreGeo, coreMat);
+  emitterGroup.add(bladeCore);
+
+  // Outer Plasma Aura Sheath
+  const bladeAuraGeo = new THREE.ConeGeometry(0.075, 1.48, 8);
+  bladeAuraGeo.rotateX(Math.PI);
+  bladeAuraGeo.translate(0, 0.72, 0);
+
+  const auraMat = new THREE.MeshStandardMaterial({
+    color: 0x00f0ff,
+    emissive: 0x00f0ff,
+    emissiveIntensity: 2.8,
+    transparent: true,
+    opacity: 0.55,
+    blending: THREE.AdditiveBlending,
+    roughness: 0.1,
+  });
+  const bladeAura = new THREE.Mesh(bladeAuraGeo, auraMat);
+  emitterGroup.add(bladeAura);
+
+  return { weaponGroup: weapon, bladeGlow: bladeAura };
+}
+
+/**
+ * Creates a holographic energy shield attachment.
+ */
+export function createHolographicAuraShield(): { shieldGroup: THREE.Group; shieldMesh: THREE.Mesh } {
+  const shield = new THREE.Group();
+
+  // Forearm emitter bracket
+  const bracketGeo = new THREE.TorusGeometry(0.12, 0.025, 8, 16);
+  const bracketMat = new THREE.MeshStandardMaterial({
+    color: 0x00e5ff,
+    emissive: 0x00e5ff,
+    emissiveIntensity: 2.5,
+  });
+  const bracket = new THREE.Mesh(bracketGeo, bracketMat);
+  shield.add(bracket);
+
+  // Holographic Hexagonal Disc
+  const hexTexture = createHexShieldTexture();
+  const discGeo = new THREE.CylinderGeometry(0.85, 0.85, 0.02, 6);
+  discGeo.rotateX(Math.PI / 2);
+
+  const shieldMat = new THREE.MeshStandardMaterial({
+    map: hexTexture,
+    color: 0x00f7ff,
+    emissive: 0x00e5ff,
+    emissiveIntensity: 2.2,
+    transparent: true,
+    opacity: 0.88,
+    side: THREE.DoubleSide,
+    roughness: 0.1,
+  });
+
+  const shieldMesh = new THREE.Mesh(discGeo, shieldMat);
+  shieldMesh.position.z = 0.05;
+  shield.add(shieldMesh);
+
+  shield.scale.set(0, 0, 0); // Initially collapsed until blocking
+  return { shieldGroup: shield, shieldMesh };
+}
+
+/**
+ * Creates the demonic Dread Axe weapon.
+ */
+export function createDreadAxe(): { axeGroup: THREE.Group; axeCore: THREE.Mesh } {
+  const axe = new THREE.Group();
+
+  // Dark obsidian haft with spine rings
+  const haftGeo = new THREE.CylinderGeometry(0.04, 0.035, 2.4, 12);
+  const darkMetal = new THREE.MeshStandardMaterial({
+    color: 0x12080a,
+    metalness: 0.9,
+    roughness: 0.35,
+  });
+  const haft = new THREE.Mesh(haftGeo, darkMetal);
+  axe.add(haft);
+
+  // Double crescent demonic axe head
+  const headGroup = new THREE.Group();
+  headGroup.position.y = 0.85;
+  axe.add(headGroup);
+
+  const crimsonMat = new THREE.MeshStandardMaterial({
+    color: 0x4a0b14,
+    metalness: 0.85,
+    roughness: 0.25,
+  });
+
+  const redRuneMat = new THREE.MeshStandardMaterial({
+    color: 0xff0033,
+    emissive: 0xff0022,
+    emissiveIntensity: 3.5,
+  });
+
+  // Curved Crescent Blade Left
+  const bladeLGeo = new THREE.TorusGeometry(0.48, 0.12, 6, 16, Math.PI * 0.9);
+  const bladeL = new THREE.Mesh(bladeLGeo, crimsonMat);
+  bladeL.position.x = 0.35;
+  bladeL.rotation.z = -Math.PI / 2;
+  headGroup.add(bladeL);
+
+  // Curved Crescent Blade Right
+  const bladeRGeo = new THREE.TorusGeometry(0.38, 0.09, 6, 16, Math.PI * 0.9);
+  const bladeR = new THREE.Mesh(bladeRGeo, crimsonMat);
+  bladeR.position.x = -0.3;
+  bladeR.rotation.z = Math.PI / 2;
+  headGroup.add(bladeR);
+
+  // Central Glowing Rune Core
+  const coreGeo = new THREE.OctahedronGeometry(0.12, 0);
+  const axeCore = new THREE.Mesh(coreGeo, redRuneMat);
+  headGroup.add(axeCore);
+
+  // Top Spire Piercer
+  const spireGeo = new THREE.ConeGeometry(0.08, 0.5, 6);
+  const spire = new THREE.Mesh(spireGeo, darkMetal);
+  spire.position.y = 0.4;
+  headGroup.add(spire);
+
+  return { axeGroup: axe, axeCore };
+}
+
+/**
+ * Builds a realistic anatomical cyber-silhouette mannequin for the Hero.
+ * (Used while GLB is loading or as a high-fidelity graceful fallback — NO BOXES!)
+ */
+function buildSculptedHeroSilhouette(): {
   root: THREE.Group;
   body: THREE.Group;
   head: THREE.Group;
@@ -65,577 +263,656 @@ export interface CharacterRig {
   rightArm: THREE.Group;
   leftLeg: THREE.Group;
   rightLeg: THREE.Group;
-  weapon: THREE.Group;
-  shield?: THREE.Group;
-  coreMesh?: THREE.Mesh;
-  swordGlow?: THREE.Mesh;
-  shieldGlow?: THREE.Mesh;
-  animTime: number;
-  isHero: boolean;
-}
-
-/**
- * Builds the Futuristic Blue/Cyan Powered Armor Hero
- */
-export function createHeroCharacter(): CharacterRig {
+  coreMesh: THREE.Mesh;
+} {
   const root = new THREE.Group();
   const body = new THREE.Group();
   root.add(body);
 
-  // Materials
+  // Metallic cobalt exoskeleton material with Fresnel-style rim reflections
   const armorMat = new THREE.MeshStandardMaterial({
-    color: 0x1e3a5f, // Deep futuristic cobalt navy
-    metalness: 0.85,
-    roughness: 0.25,
+    color: 0x142b47,
+    metalness: 0.92,
+    roughness: 0.22,
   });
 
-  const secondaryArmorMat = new THREE.MeshStandardMaterial({
-    color: 0x0c1b2e,
-    metalness: 0.9,
-    roughness: 0.3,
+  const undersuitMat = new THREE.MeshStandardMaterial({
+    color: 0x07111c,
+    metalness: 0.7,
+    roughness: 0.45,
   });
 
-  const cyanGlowMat = new THREE.MeshStandardMaterial({
+  const cyanEnergyMat = new THREE.MeshStandardMaterial({
     color: 0x00f0ff,
     emissive: 0x00f0ff,
-    emissiveIntensity: 2.2,
+    emissiveIntensity: 2.8,
     roughness: 0.1,
   });
 
   const visorMat = new THREE.MeshStandardMaterial({
-    color: 0x00ffff,
+    color: 0x22ffff,
     emissive: 0x00e5ff,
-    emissiveIntensity: 3.0,
-    roughness: 0.1,
+    emissiveIntensity: 3.5,
+    roughness: 0.05,
   });
 
-  // Pelvis & Torso
-  const torsoGroup = new THREE.Group();
-  body.add(torsoGroup);
+  // --- Pelvis & Contoured Torso ---
+  const pelvisGeo = new THREE.SphereGeometry(0.24, 12, 12);
+  pelvisGeo.scale(1, 0.75, 0.85);
+  const pelvis = new THREE.Mesh(pelvisGeo, undersuitMat);
+  pelvis.position.y = 0.95;
+  body.add(pelvis);
 
-  // Lower abdomen
-  const abdomenGeo = new THREE.CylinderGeometry(0.24, 0.22, 0.45, 8);
-  const abdomen = new THREE.Mesh(abdomenGeo, secondaryArmorMat);
-  abdomen.position.y = 1.05;
-  abdomen.castShadow = true;
-  torsoGroup.add(abdomen);
+  // Contoured Chest & Ribcage (Curved aerodynamic armor shell)
+  const chestGroup = new THREE.Group();
+  chestGroup.position.y = 1.38;
+  body.add(chestGroup);
 
-  // Chest armor plate
-  const chestGeo = new THREE.BoxGeometry(0.68, 0.58, 0.42);
+  const chestGeo = new THREE.CapsuleGeometry(0.28, 0.32, 8, 16);
+  chestGeo.scale(1.18, 1, 0.82);
   const chest = new THREE.Mesh(chestGeo, armorMat);
-  chest.position.y = 1.48;
   chest.castShadow = true;
-  torsoGroup.add(chest);
+  chestGroup.add(chest);
 
-  // Glowing Cyan AURA Chest Core
-  const coreGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.08, 16);
+  // Armored Pectoral & Lat Plates
+  const pecGeo = new THREE.SphereGeometry(0.18, 10, 10);
+  pecGeo.scale(1.1, 0.7, 0.6);
+  const pecL = new THREE.Mesh(pecGeo, armorMat);
+  pecL.position.set(0.12, 0.08, 0.14);
+  chestGroup.add(pecL);
+
+  const pecR = pecL.clone();
+  pecR.position.x = -0.12;
+  chestGroup.add(pecR);
+
+  // Glowing Cyan AURA Arc Reactor Core
+  const coreGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.04, 16);
   coreGeo.rotateX(Math.PI / 2);
-  const coreMesh = new THREE.Mesh(coreGeo, cyanGlowMat);
-  coreMesh.position.set(0, 1.52, 0.22);
-  torsoGroup.add(coreMesh);
+  const coreMesh = new THREE.Mesh(coreGeo, cyanEnergyMat);
+  coreMesh.position.set(0, 0.06, 0.22);
+  chestGroup.add(coreMesh);
 
-  // Chest armor accents
-  const chestAccentGeo = new THREE.BoxGeometry(0.55, 0.06, 0.44);
-  const chestAccent = new THREE.Mesh(chestAccentGeo, cyanGlowMat);
-  chestAccent.position.set(0, 1.35, 0.01);
-  torsoGroup.add(chestAccent);
-
-  // Head & Visor
+  // --- Helmet with Futuristic Visor ---
   const head = new THREE.Group();
-  head.position.set(0, 1.88, 0);
-  torsoGroup.add(head);
+  head.position.set(0, 1.82, 0);
+  body.add(head);
 
-  const helmetGeo = new THREE.BoxGeometry(0.32, 0.36, 0.34);
+  const helmetGeo = new THREE.SphereGeometry(0.18, 16, 16);
+  helmetGeo.scale(0.9, 1.15, 1.05);
   const helmet = new THREE.Mesh(helmetGeo, armorMat);
   helmet.castShadow = true;
   head.add(helmet);
 
-  const visorGeo = new THREE.BoxGeometry(0.28, 0.1, 0.36);
+  // Curved Futuristic Visor Plate
+  const visorGeo = new THREE.SphereGeometry(0.14, 12, 12, 0, Math.PI);
+  visorGeo.scale(0.95, 0.45, 0.7);
   const visor = new THREE.Mesh(visorGeo, visorMat);
-  visor.position.set(0, 0.04, 0.03);
+  visor.position.set(0, 0.02, 0.08);
   head.add(visor);
 
-  // Shoulders & Arms
-  // Left Arm (Shield arm)
+  // --- Shoulders & Athletic Arms ---
+  // Left Arm
   const leftArm = new THREE.Group();
-  leftArm.position.set(0.48, 1.62, 0);
+  leftArm.position.set(0.42, 1.52, 0);
   body.add(leftArm);
 
-  const lShoulderGeo = new THREE.SphereGeometry(0.18, 8, 8);
-  const lShoulder = new THREE.Mesh(lShoulderGeo, armorMat);
-  lShoulder.castShadow = true;
-  leftArm.add(lShoulder);
+  const pauldronGeo = new THREE.SphereGeometry(0.15, 12, 12);
+  pauldronGeo.scale(1, 0.85, 1.1);
+  const pauldronL = new THREE.Mesh(pauldronGeo, armorMat);
+  leftArm.add(pauldronL);
 
-  const lUpperArmGeo = new THREE.CylinderGeometry(0.11, 0.09, 0.38, 8);
-  const lUpperArm = new THREE.Mesh(lUpperArmGeo, secondaryArmorMat);
-  lUpperArm.position.y = -0.22;
-  lUpperArm.castShadow = true;
-  leftArm.add(lUpperArm);
+  const upperArmGeo = new THREE.CapsuleGeometry(0.075, 0.26, 6, 12);
+  const upperArmL = new THREE.Mesh(upperArmGeo, undersuitMat);
+  upperArmL.position.y = -0.22;
+  leftArm.add(upperArmL);
 
-  const lForearmGroup = new THREE.Group();
-  lForearmGroup.position.set(0, -0.42, 0);
-  leftArm.add(lForearmGroup);
+  const forearmLGroup = new THREE.Group();
+  forearmLGroup.position.set(0, -0.42, 0);
+  leftArm.add(forearmLGroup);
 
-  const lForearmGeo = new THREE.CylinderGeometry(0.1, 0.08, 0.36, 8);
-  const lForearm = new THREE.Mesh(lForearmGeo, armorMat);
-  lForearm.position.y = -0.18;
-  lForearm.castShadow = true;
-  lForearmGroup.add(lForearm);
+  const forearmGeo = new THREE.CapsuleGeometry(0.07, 0.28, 6, 12);
+  const forearmL = new THREE.Mesh(forearmGeo, armorMat);
+  forearmL.position.y = -0.16;
+  forearmLGroup.add(forearmL);
 
-  // Holographic Energy Shield on Left Forearm
-  const shield = new THREE.Group();
-  shield.position.set(0.15, -0.18, 0.2);
-  shield.rotation.y = Math.PI / 4;
-  lForearmGroup.add(shield);
-
-  // Shield emitter ring
-  const emitterGeo = new THREE.TorusGeometry(0.14, 0.03, 8, 16);
-  const emitter = new THREE.Mesh(emitterGeo, cyanGlowMat);
-  shield.add(emitter);
-
-  // Holographic Hex Barrier (Semi-transparent with glowing hex texture)
-  const hexTexture = createHexShieldTexture();
-  const shieldBarrierGeo = new THREE.CylinderGeometry(0.75, 0.75, 0.04, 6);
-  shieldBarrierGeo.rotateX(Math.PI / 2);
-  const shieldMat = new THREE.MeshStandardMaterial({
-    map: hexTexture,
-    color: 0x00f0ff,
-    emissive: 0x00f0ff,
-    emissiveIntensity: 1.8,
-    transparent: true,
-    opacity: 0.85,
-    roughness: 0.1,
-    side: THREE.DoubleSide,
-  });
-  const shieldMesh = new THREE.Mesh(shieldBarrierGeo, shieldMat);
-  shield.add(shieldMesh);
-  shield.scale.set(0, 0, 0); // hidden until blocking
-
-  // Right Arm (Weapon arm)
+  // Right Arm
   const rightArm = new THREE.Group();
-  rightArm.position.set(-0.48, 1.62, 0);
+  rightArm.position.set(-0.42, 1.52, 0);
   body.add(rightArm);
 
-  const rShoulderGeo = new THREE.SphereGeometry(0.18, 8, 8);
-  const rShoulder = new THREE.Mesh(rShoulderGeo, armorMat);
-  rShoulder.castShadow = true;
-  rightArm.add(rShoulder);
+  const pauldronR = new THREE.Mesh(pauldronGeo, armorMat);
+  rightArm.add(pauldronR);
 
-  const rUpperArmGeo = new THREE.CylinderGeometry(0.11, 0.09, 0.38, 8);
-  const rUpperArm = new THREE.Mesh(rUpperArmGeo, secondaryArmorMat);
-  rUpperArm.position.y = -0.22;
-  rUpperArm.castShadow = true;
-  rightArm.add(rUpperArm);
+  const upperArmR = new THREE.Mesh(upperArmGeo, undersuitMat);
+  upperArmR.position.y = -0.22;
+  rightArm.add(upperArmR);
 
-  const rForearmGroup = new THREE.Group();
-  rForearmGroup.position.set(0, -0.42, 0);
-  rightArm.add(rForearmGroup);
+  const forearmRGroup = new THREE.Group();
+  forearmRGroup.position.set(0, -0.42, 0);
+  rightArm.add(forearmRGroup);
 
-  const rForearmGeo = new THREE.CylinderGeometry(0.1, 0.08, 0.36, 8);
-  const rForearm = new THREE.Mesh(rForearmGeo, armorMat);
-  rForearm.position.y = -0.18;
-  rForearm.castShadow = true;
-  rForearmGroup.add(rForearm);
+  const forearmR = new THREE.Mesh(forearmGeo, armorMat);
+  forearmR.position.y = -0.16;
+  forearmRGroup.add(forearmR);
 
-  // Energy Sword in Right Hand
-  const weapon = new THREE.Group();
-  weapon.position.set(0, -0.38, 0.12);
-  weapon.rotation.x = Math.PI / 2;
-  rForearmGroup.add(weapon);
+  // --- Legs with Athletic Kinetic Greaves ---
+  const thighGeo = new THREE.CapsuleGeometry(0.095, 0.38, 6, 12);
+  const shinGeo = new THREE.CapsuleGeometry(0.085, 0.38, 6, 12);
 
-  // Hilt
-  const hiltGeo = new THREE.CylinderGeometry(0.04, 0.045, 0.28, 8);
-  const hilt = new THREE.Mesh(hiltGeo, secondaryArmorMat);
-  weapon.add(hilt);
-
-  // Crossguard
-  const guardGeo = new THREE.BoxGeometry(0.26, 0.05, 0.1);
-  const guard = new THREE.Mesh(guardGeo, armorMat);
-  guard.position.y = 0.14;
-  weapon.add(guard);
-
-  // Glowing Plasma Blade (Energy sword)
-  const bladeCoreGeo = new THREE.BoxGeometry(0.1, 1.3, 0.02);
-  const bladeCore = new THREE.Mesh(bladeCoreGeo, cyanGlowMat);
-  bladeCore.position.y = 0.82;
-  weapon.add(bladeCore);
-
-  const bladeAuraGeo = new THREE.BoxGeometry(0.15, 1.32, 0.04);
-  const bladeAuraMat = new THREE.MeshStandardMaterial({
-    color: 0x00f0ff,
-    emissive: 0x00f0ff,
-    emissiveIntensity: 2.8,
-    transparent: true,
-    opacity: 0.65,
-  });
-  const bladeAura = new THREE.Mesh(bladeAuraGeo, bladeAuraMat);
-  bladeAura.position.y = 0.82;
-  weapon.add(bladeAura);
-
-  // Legs
+  // Left Leg
   const leftLeg = new THREE.Group();
-  leftLeg.position.set(0.2, 0.85, 0);
+  leftLeg.position.set(0.18, 0.88, 0);
   body.add(leftLeg);
 
-  const lThighGeo = new THREE.CylinderGeometry(0.12, 0.1, 0.44, 8);
-  const lThigh = new THREE.Mesh(lThighGeo, armorMat);
-  lThigh.position.y = -0.22;
-  lThigh.castShadow = true;
-  leftLeg.add(lThigh);
+  const thighL = new THREE.Mesh(thighGeo, armorMat);
+  thighL.position.y = -0.24;
+  leftLeg.add(thighL);
 
-  const lShinGeo = new THREE.CylinderGeometry(0.1, 0.11, 0.44, 8);
-  const lShin = new THREE.Mesh(lShinGeo, secondaryArmorMat);
-  lShin.position.y = -0.66;
-  lShin.castShadow = true;
-  leftLeg.add(lShin);
+  const shinL = new THREE.Mesh(shinGeo, undersuitMat);
+  shinL.position.y = -0.68;
+  leftLeg.add(shinL);
 
+  // Boot
+  const bootGeo = new THREE.CapsuleGeometry(0.08, 0.16, 6, 10);
+  bootGeo.rotateX(Math.PI / 2);
+  const bootL = new THREE.Mesh(bootGeo, armorMat);
+  bootL.position.set(0, -0.88, 0.05);
+  leftLeg.add(bootL);
+
+  // Right Leg
   const rightLeg = new THREE.Group();
-  rightLeg.position.set(-0.2, 0.85, 0);
+  rightLeg.position.set(-0.18, 0.88, 0);
   body.add(rightLeg);
 
-  const rThighGeo = new THREE.CylinderGeometry(0.12, 0.1, 0.44, 8);
-  const rThigh = new THREE.Mesh(rThighGeo, armorMat);
-  rThigh.position.y = -0.22;
-  rThigh.castShadow = true;
-  rightLeg.add(rThigh);
+  const thighR = new THREE.Mesh(thighGeo, armorMat);
+  thighR.position.y = -0.24;
+  rightLeg.add(thighR);
 
-  const rShinGeo = new THREE.CylinderGeometry(0.1, 0.11, 0.44, 8);
-  const rShin = new THREE.Mesh(rShinGeo, secondaryArmorMat);
-  rShin.position.y = -0.66;
-  rShin.castShadow = true;
-  rightLeg.add(rShin);
+  const shinR = new THREE.Mesh(shinGeo, undersuitMat);
+  shinR.position.y = -0.68;
+  rightLeg.add(shinR);
 
-  return {
-    root,
-    body,
-    head,
-    leftArm,
-    rightArm,
-    leftLeg,
-    rightLeg,
-    weapon,
-    shield,
-    coreMesh,
-    swordGlow: bladeAura,
-    shieldGlow: shieldMesh,
-    animTime: 0,
-    isHero: true,
-  };
+  const bootR = new THREE.Mesh(bootGeo, armorMat);
+  bootR.position.set(0, -0.88, 0.05);
+  rightLeg.add(bootR);
+
+  return { root, body, head, leftArm, rightArm, leftLeg, rightLeg, coreMesh };
 }
 
 /**
- * Builds THE DREAD LORD (The Final Boss Villain from prompt & reference image)
+ * Builds a realistic demonic villain silhouette for THE DREAD LORD.
+ * (NO BOXES! Sculpted muscular dark fantasy armor with sweeping horns & red core.)
  */
-export function createDreadLordCharacter(): CharacterRig {
+function buildSculptedDreadLordSilhouette(): {
+  root: THREE.Group;
+  body: THREE.Group;
+  head: THREE.Group;
+  leftArm: THREE.Group;
+  rightArm: THREE.Group;
+  leftLeg: THREE.Group;
+  rightLeg: THREE.Group;
+  coreMesh: THREE.Mesh;
+} {
   const root = new THREE.Group();
+  root.scale.set(1.48, 1.48, 1.48); // Imposing boss stature
+
   const body = new THREE.Group();
   root.add(body);
 
-  // Scale up for intimidating final boss presence
-  root.scale.set(1.45, 1.45, 1.45);
-
-  // Materials
-  const darkPlateMat = new THREE.MeshStandardMaterial({
-    color: 0x1f0b0e, // Demonic crimson-tinted obsidian
-    metalness: 0.9,
-    roughness: 0.35,
+  const darkObsidianMat = new THREE.MeshStandardMaterial({
+    color: 0x18090d,
+    metalness: 0.95,
+    roughness: 0.28,
   });
 
   const bloodArmorMat = new THREE.MeshStandardMaterial({
-    color: 0x470e17,
+    color: 0x3d0b13,
     metalness: 0.85,
-    roughness: 0.3,
+    roughness: 0.32,
   });
 
-  const redCoreMat = new THREE.MeshStandardMaterial({
-    color: 0xff0033,
+  const demonicRuneMat = new THREE.MeshStandardMaterial({
+    color: 0xff002b,
     emissive: 0xff0022,
-    emissiveIntensity: 3.2,
+    emissiveIntensity: 3.5,
     roughness: 0.1,
   });
 
-  // Torso
+  // Broad Demonic Torso
   const torsoGroup = new THREE.Group();
+  torsoGroup.position.y = 1.45;
   body.add(torsoGroup);
 
-  const abdomenGeo = new THREE.CylinderGeometry(0.3, 0.26, 0.5, 8);
-  const abdomen = new THREE.Mesh(abdomenGeo, darkPlateMat);
-  abdomen.position.y = 1.1;
-  abdomen.castShadow = true;
-  torsoGroup.add(abdomen);
+  const torsoGeo = new THREE.CapsuleGeometry(0.38, 0.44, 8, 16);
+  torsoGeo.scale(1.25, 1, 0.9);
+  const torsoMesh = new THREE.Mesh(torsoGeo, darkObsidianMat);
+  torsoMesh.castShadow = true;
+  torsoGroup.add(torsoMesh);
 
-  // Massive Spiked Chest
-  const chestGeo = new THREE.BoxGeometry(0.88, 0.7, 0.55);
-  const chest = new THREE.Mesh(chestGeo, bloodArmorMat);
-  chest.position.y = 1.62;
-  chest.castShadow = true;
-  torsoGroup.add(chest);
-
-  // Glowing Red Demonic Core
+  // Glowing Abyssal Core
   const coreGeo = new THREE.OctahedronGeometry(0.14, 0);
-  const coreMesh = new THREE.Mesh(coreGeo, redCoreMat);
-  coreMesh.position.set(0, 1.65, 0.29);
+  const coreMesh = new THREE.Mesh(coreGeo, demonicRuneMat);
+  coreMesh.position.set(0, 0.08, 0.34);
   torsoGroup.add(coreMesh);
 
-  // Spiked Rib plates
-  const ribGeo = new THREE.ConeGeometry(0.08, 0.35, 4);
-  ribGeo.rotateZ(Math.PI / 3);
-  const ribL = new THREE.Mesh(ribGeo, darkPlateMat);
-  ribL.position.set(0.48, 1.7, 0.15);
-  torsoGroup.add(ribL);
-
-  const ribR = ribL.clone();
-  ribR.position.set(-0.48, 1.7, 0.15);
-  ribR.rotation.z = -Math.PI / 3;
-  torsoGroup.add(ribR);
-
-  // Demonic Head with Horns & Glowing Red Eyes
+  // --- Demonic Helmet & Sweeping Horns ---
   const head = new THREE.Group();
-  head.position.set(0, 2.1, 0);
-  torsoGroup.add(head);
+  head.position.set(0, 2.05, 0);
+  body.add(head);
 
-  const helmGeo = new THREE.BoxGeometry(0.4, 0.44, 0.42);
-  const helm = new THREE.Mesh(helmGeo, darkPlateMat);
-  helm.castShadow = true;
+  const helmGeo = new THREE.SphereGeometry(0.24, 16, 16);
+  helmGeo.scale(0.9, 1.15, 1.05);
+  const helm = new THREE.Mesh(helmGeo, darkObsidianMat);
   head.add(helm);
 
-  // Glowing Red Eyes
-  const eyeLGeo = new THREE.BoxGeometry(0.09, 0.04, 0.05);
-  const eyeL = new THREE.Mesh(eyeLGeo, redCoreMat);
-  eyeL.position.set(0.1, 0.05, 0.22);
+  // Glowing Slit Eyes
+  const eyeGeo = new THREE.SphereGeometry(0.04, 8, 8);
+  eyeGeo.scale(1.8, 0.4, 0.8);
+  const eyeL = new THREE.Mesh(eyeGeo, demonicRuneMat);
+  eyeL.position.set(0.09, 0.04, 0.21);
   head.add(eyeL);
 
   const eyeR = eyeL.clone();
-  eyeR.position.set(-0.1, 0.05, 0.22);
+  eyeR.position.x = -0.09;
   head.add(eyeR);
 
-  // Massive Curved Horns
-  const hornCurveL = new THREE.CurvePath<THREE.Vector3>();
-  // Left Horn using cone segments
-  const hornL1 = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.4, 6), bloodArmorMat);
-  hornL1.position.set(0.24, 0.32, -0.05);
-  hornL1.rotation.z = -0.5;
-  hornL1.rotation.x = -0.2;
-  head.add(hornL1);
+  // Large Sweeping Curved Horns
+  const createHornCurve = (isRight: boolean) => {
+    const hornGroup = new THREE.Group();
+    const sign = isRight ? -1 : 1;
 
-  const hornL2 = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.4, 6), darkPlateMat);
-  hornL2.position.set(0.38, 0.62, -0.15);
-  hornL2.rotation.z = -0.9;
-  hornL2.rotation.x = -0.4;
-  head.add(hornL2);
+    // Smooth sweeping cone segments forming majestic curved arc
+    const seg1 = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.45, 10), bloodArmorMat);
+    seg1.position.set(sign * 0.22, 0.25, -0.05);
+    seg1.rotation.z = sign * -0.55;
+    seg1.rotation.x = -0.25;
+    hornGroup.add(seg1);
 
-  // Right Horn
-  const hornR1 = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.4, 6), bloodArmorMat);
-  hornR1.position.set(-0.24, 0.32, -0.05);
-  hornR1.rotation.z = 0.5;
-  hornR1.rotation.x = -0.2;
-  head.add(hornR1);
+    const seg2 = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.45, 10), darkObsidianMat);
+    seg2.position.set(sign * 0.42, 0.58, -0.18);
+    seg2.rotation.z = sign * -0.95;
+    seg2.rotation.x = -0.45;
+    hornGroup.add(seg2);
 
-  const hornR2 = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.4, 6), darkPlateMat);
-  hornR2.position.set(-0.38, 0.62, -0.15);
-  hornR2.rotation.z = 0.9;
-  hornR2.rotation.x = -0.4;
-  head.add(hornR2);
+    const seg3 = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.35, 10), demonicRuneMat);
+    seg3.position.set(sign * 0.58, 0.82, -0.28);
+    seg3.rotation.z = sign * -1.35;
+    seg3.rotation.x = -0.65;
+    hornGroup.add(seg3);
 
-  // Arms
-  // Left Arm (Claw/Fist)
+    return hornGroup;
+  };
+
+  head.add(createHornCurve(false));
+  head.add(createHornCurve(true));
+
+  // --- Muscular Spiked Arms ---
+  const armGeo = new THREE.CapsuleGeometry(0.12, 0.38, 6, 12);
+  const forearmGeo = new THREE.CapsuleGeometry(0.11, 0.36, 6, 12);
+
   const leftArm = new THREE.Group();
-  leftArm.position.set(0.62, 1.8, 0);
+  leftArm.position.set(0.58, 1.68, 0);
   body.add(leftArm);
+  leftArm.add(new THREE.Mesh(armGeo, darkObsidianMat));
 
-  const lSpikePad = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.45, 5), darkPlateMat);
-  lSpikePad.rotation.z = -Math.PI / 4;
-  leftArm.add(lSpikePad);
+  const leftForearm = new THREE.Group();
+  leftForearm.position.set(0, -0.46, 0);
+  leftArm.add(leftForearm);
+  leftForearm.add(new THREE.Mesh(forearmGeo, bloodArmorMat));
 
-  const lArmGeo = new THREE.CylinderGeometry(0.15, 0.12, 0.45, 8);
-  const lArmMesh = new THREE.Mesh(lArmGeo, bloodArmorMat);
-  lArmMesh.position.y = -0.28;
-  leftArm.add(lArmMesh);
-
-  // Right Arm (Huge Battle Axe Wielder)
   const rightArm = new THREE.Group();
-  rightArm.position.set(-0.62, 1.8, 0);
+  rightArm.position.set(-0.58, 1.68, 0);
   body.add(rightArm);
+  rightArm.add(new THREE.Mesh(armGeo, darkObsidianMat));
 
-  const rSpikePad = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.45, 5), darkPlateMat);
-  rSpikePad.rotation.z = Math.PI / 4;
-  rightArm.add(rSpikePad);
+  const rightForearm = new THREE.Group();
+  rightForearm.position.set(0, -0.46, 0);
+  rightArm.add(rightForearm);
+  rightForearm.add(new THREE.Mesh(forearmGeo, bloodArmorMat));
 
-  const rArmGeo = new THREE.CylinderGeometry(0.15, 0.12, 0.45, 8);
-  const rArmMesh = new THREE.Mesh(rArmGeo, bloodArmorMat);
-  rArmMesh.position.y = -0.28;
-  rightArm.add(rArmMesh);
+  // --- Sturdy Spiked Legs ---
+  const legGeo = new THREE.CapsuleGeometry(0.15, 0.46, 6, 12);
+  const shinGeo = new THREE.CapsuleGeometry(0.13, 0.46, 6, 12);
 
-  // Huge Dark Fantasy Battle Axe in Hand
-  const weapon = new THREE.Group();
-  weapon.position.set(0, -0.5, 0.2);
-  weapon.rotation.x = Math.PI / 2.3;
-  rightArm.add(weapon);
-
-  // Axe Handle / Haft
-  const haftGeo = new THREE.CylinderGeometry(0.06, 0.05, 2.3, 8);
-  const haft = new THREE.Mesh(haftGeo, darkPlateMat);
-  weapon.add(haft);
-
-  // Double Curved Axe Blades
-  const bladeGeo = new THREE.BoxGeometry(0.85, 0.65, 0.06);
-  const blade = new THREE.Mesh(bladeGeo, bloodArmorMat);
-  blade.position.set(0.4, 0.8, 0);
-  weapon.add(blade);
-
-  const bladeBackGeo = new THREE.BoxGeometry(0.65, 0.5, 0.06);
-  const bladeBack = new THREE.Mesh(bladeBackGeo, bloodArmorMat);
-  bladeBack.position.set(-0.35, 0.8, 0);
-  weapon.add(bladeBack);
-
-  // Axe glowing rune core
-  const axeCoreGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.08, 8);
-  axeCoreGeo.rotateX(Math.PI / 2);
-  const axeCore = new THREE.Mesh(axeCoreGeo, redCoreMat);
-  axeCore.position.set(0, 0.8, 0);
-  weapon.add(axeCore);
-
-  // Top Axe Spike
-  const topSpikeGeo = new THREE.ConeGeometry(0.1, 0.45, 6);
-  const topSpike = new THREE.Mesh(topSpikeGeo, darkPlateMat);
-  topSpike.position.y = 1.35;
-  weapon.add(topSpike);
-
-  // Legs
   const leftLeg = new THREE.Group();
-  leftLeg.position.set(0.28, 0.9, 0);
+  leftLeg.position.set(0.26, 0.95, 0);
   body.add(leftLeg);
-  const lLegMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.13, 0.9, 8), darkPlateMat);
-  lLegMesh.position.y = -0.45;
-  leftLeg.add(lLegMesh);
+  leftLeg.add(new THREE.Mesh(legGeo, bloodArmorMat));
+  const lShin = new THREE.Mesh(shinGeo, darkObsidianMat);
+  lShin.position.y = -0.52;
+  leftLeg.add(lShin);
 
   const rightLeg = new THREE.Group();
-  rightLeg.position.set(-0.28, 0.9, 0);
+  rightLeg.position.set(-0.26, 0.95, 0);
   body.add(rightLeg);
-  const rLegMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.13, 0.9, 8), darkPlateMat);
-  rLegMesh.position.y = -0.45;
-  rightLeg.add(rLegMesh);
+  rightLeg.add(new THREE.Mesh(legGeo, bloodArmorMat));
+  const rShin = new THREE.Mesh(shinGeo, darkObsidianMat);
+  rShin.position.y = -0.52;
+  rightLeg.add(rShin);
 
-  return {
-    root,
-    body,
-    head,
-    leftArm,
-    rightArm,
-    leftLeg,
-    rightLeg,
-    weapon,
-    coreMesh,
-    animTime: 0,
-    isHero: false,
-  };
+  return { root, body, head, leftArm, rightArm, leftLeg, rightLeg, coreMesh };
 }
 
 /**
- * Builds generic enemy characters (Dark Soldier, Shadow Archer, Dark Guardian)
+ * Builds organic sculpted silhouettes for standard enemy types (NO BOXES!).
  */
-export function createEnemyMesh(type: string): CharacterRig {
+function buildSculptedEnemySilhouette(type: string): {
+  root: THREE.Group;
+  body: THREE.Group;
+  head: THREE.Group;
+  leftArm: THREE.Group;
+  rightArm: THREE.Group;
+  leftLeg: THREE.Group;
+  rightLeg: THREE.Group;
+} {
   const root = new THREE.Group();
   const body = new THREE.Group();
   root.add(body);
 
-  let mainColor = 0x221111;
-  let glowColor = 0xff2222;
   let scale = 1.0;
+  let primaryColor = 0x17151a;
+  let glowColor = 0xff0044;
 
   if (type === 'dark_guardian') {
-    mainColor = 0x331111;
-    scale = 1.25;
+    scale = 1.35;
+    primaryColor = 0x240e14;
+    glowColor = 0xff2200;
   } else if (type === 'shadow_archer') {
-    mainColor = 0x151122;
-    glowColor = 0xff00cc;
-    scale = 0.9;
+    scale = 0.92;
+    primaryColor = 0x110e1c;
+    glowColor = 0xcc00ff;
   } else if (type === 'aura_hunter') {
-    mainColor = 0x112222;
+    scale = 0.96;
+    primaryColor = 0x091c1a;
     glowColor = 0x00ffcc;
-    scale = 0.95;
+  } else if (type === 'demon_beast') {
+    scale = 1.2;
+    primaryColor = 0x2e0c12;
+    glowColor = 0xff0033;
   }
 
   root.scale.set(scale, scale, scale);
 
   const mat = new THREE.MeshStandardMaterial({
-    color: mainColor,
-    metalness: 0.8,
-    roughness: 0.4,
+    color: primaryColor,
+    metalness: 0.88,
+    roughness: 0.3,
   });
 
   const glowMat = new THREE.MeshStandardMaterial({
     color: glowColor,
     emissive: glowColor,
-    emissiveIntensity: 2.0,
+    emissiveIntensity: 2.8,
   });
 
   // Torso
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.65, 0.35), mat);
+  const torsoGeo = new THREE.CapsuleGeometry(0.24, 0.36, 6, 12);
+  const torso = new THREE.Mesh(torsoGeo, mat);
   torso.position.y = 1.25;
-  torso.castShadow = true;
   body.add(torso);
 
-  // Visor
-  const visor = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.08, 0.28), glowMat);
-  visor.position.set(0, 1.7, 0.08);
-  body.add(visor);
-
-  // Head
+  // Head & Visor
   const head = new THREE.Group();
-  head.position.set(0, 1.7, 0);
-  const headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.32, 0.28), mat);
-  head.add(headMesh);
+  head.position.set(0, 1.72, 0);
   body.add(head);
 
+  const headGeo = new THREE.SphereGeometry(0.16, 12, 12);
+  head.add(new THREE.Mesh(headGeo, mat));
+
+  const visorGeo = new THREE.CapsuleGeometry(0.04, 0.14, 4, 8);
+  visorGeo.rotateZ(Math.PI / 2);
+  const visor = new THREE.Mesh(visorGeo, glowMat);
+  visor.position.set(0, 0.02, 0.13);
+  head.add(visor);
+
   // Limbs
+  const armGeo = new THREE.CapsuleGeometry(0.065, 0.44, 4, 10);
   const leftArm = new THREE.Group();
-  leftArm.position.set(0.38, 1.4, 0);
-  leftArm.add(new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.55, 6), mat));
+  leftArm.position.set(0.34, 1.45, 0);
+  leftArm.add(new THREE.Mesh(armGeo, mat));
   body.add(leftArm);
 
   const rightArm = new THREE.Group();
-  rightArm.position.set(-0.38, 1.4, 0);
-  rightArm.add(new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.55, 6), mat));
+  rightArm.position.set(-0.34, 1.45, 0);
+  rightArm.add(new THREE.Mesh(armGeo, mat));
   body.add(rightArm);
 
-  const weapon = new THREE.Group();
-  weapon.position.set(0, -0.3, 0.1);
-  rightArm.add(weapon);
-
-  if (type === 'shadow_archer') {
-    // Energy Bow
-    const bowGeo = new THREE.TorusGeometry(0.35, 0.03, 6, 12, Math.PI);
-    const bow = new THREE.Mesh(bowGeo, glowMat);
-    bow.rotation.y = Math.PI / 2;
-    weapon.add(bow);
-  } else {
-    // Dark Blade / Mace
-    const sword = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.8, 0.03), glowMat);
-    sword.position.y = 0.4;
-    weapon.add(sword);
-  }
-
+  const legGeo = new THREE.CapsuleGeometry(0.08, 0.54, 4, 10);
   const leftLeg = new THREE.Group();
-  leftLeg.position.set(0.16, 0.8, 0);
-  leftLeg.add(new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.7, 6), mat));
+  leftLeg.position.set(0.15, 0.78, 0);
+  leftLeg.add(new THREE.Mesh(legGeo, mat));
   body.add(leftLeg);
 
   const rightLeg = new THREE.Group();
-  rightLeg.position.set(-0.16, 0.8, 0);
-  rightLeg.add(new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.7, 6), mat));
+  rightLeg.position.set(-0.15, 0.78, 0);
+  rightLeg.add(new THREE.Mesh(legGeo, mat));
   body.add(rightLeg);
 
-  return {
-    root,
-    body,
-    head,
-    leftArm,
-    rightArm,
-    leftLeg,
-    rightLeg,
+  return { root, body, head, leftArm, rightArm, leftLeg, rightLeg };
+}
+
+/**
+ * Creates the Hero character rig with asynchronous GLB loader and sleek fallback silhouette.
+ */
+export function createHeroCharacter(): CharacterRig {
+  const assetPath = '/assets/characters/hero.glb';
+  const silhouette = buildSculptedHeroSilhouette();
+  const { weaponGroup, bladeGlow } = createFuturisticEnergySword();
+  const { shieldGroup, shieldMesh } = createHolographicAuraShield();
+
+  // Attach weapons
+  silhouette.rightArm.add(weaponGroup);
+  weaponGroup.position.set(0, -0.42, 0.14);
+  weaponGroup.rotation.x = Math.PI / 2;
+
+  silhouette.leftArm.add(shieldGroup);
+  shieldGroup.position.set(0.12, -0.32, 0.15);
+  shieldGroup.rotation.y = Math.PI / 4;
+
+  const rig: CharacterRig = {
+    root: silhouette.root,
+    body: silhouette.body,
+    head: silhouette.head,
+    leftArm: silhouette.leftArm,
+    rightArm: silhouette.rightArm,
+    leftLeg: silhouette.leftLeg,
+    rightLeg: silhouette.rightLeg,
+    weapon: weaponGroup,
+    shield: shieldGroup,
+    coreMesh: silhouette.coreMesh,
+    swordGlow: bladeGlow,
+    shieldGlow: shieldMesh,
+    animTime: 0,
+    isHero: true,
+    isAssetLoaded: false,
+    assetPath,
+    characterType: 'hero',
+    silhouetteMesh: silhouette.body,
+  };
+
+  // Attempt to load the real hero.glb model
+  assetManager.loadGLTF(assetPath).then((gltf) => {
+    if (gltf) {
+      try {
+        const clonedModel = assetManager.cloneScene(gltf);
+        // Hide procedural silhouette and mount high-fidelity model
+        silhouette.body.visible = false;
+        rig.root.add(clonedModel);
+        rig.isAssetLoaded = true;
+
+        // Setup AnimationMixer if clips are provided
+        if (gltf.animations && gltf.animations.length > 0) {
+          const mixer = new THREE.AnimationMixer(clonedModel);
+          const actions: Record<string, THREE.AnimationAction> = {};
+          gltf.animations.forEach((clip) => {
+            actions[clip.name.toLowerCase()] = mixer.clipAction(clip);
+          });
+          rig.mixer = mixer;
+          rig.actions = actions;
+
+          // Default to idle
+          const idleAction = actions['idle'] || Object.values(actions)[0];
+          if (idleAction) {
+            idleAction.play();
+            rig.currentAction = 'idle';
+          }
+        }
+      } catch (err) {
+        console.warn('Failed mounting hero.glb model:', err);
+      }
+    }
+  });
+
+  return rig;
+}
+
+/**
+ * Creates the Dread Lord character rig with asynchronous GLB loader and sleek fallback silhouette.
+ */
+export function createDreadLordCharacter(): CharacterRig {
+  const assetPath = '/assets/characters/dread-lord.glb';
+  const silhouette = buildSculptedDreadLordSilhouette();
+  const { axeGroup, axeCore } = createDreadAxe();
+
+  // Attach Dread Axe to right arm
+  silhouette.rightArm.add(axeGroup);
+  axeGroup.position.set(0, -0.5, 0.22);
+  axeGroup.rotation.x = Math.PI / 2.3;
+
+  const rig: CharacterRig = {
+    root: silhouette.root,
+    body: silhouette.body,
+    head: silhouette.head,
+    leftArm: silhouette.leftArm,
+    rightArm: silhouette.rightArm,
+    leftLeg: silhouette.leftLeg,
+    rightLeg: silhouette.rightLeg,
+    weapon: axeGroup,
+    coreMesh: silhouette.coreMesh,
+    swordGlow: axeCore,
+    animTime: 0,
+    isHero: false,
+    isAssetLoaded: false,
+    assetPath,
+    characterType: 'dread_lord',
+    silhouetteMesh: silhouette.body,
+  };
+
+  // Attempt to load dread-lord.glb
+  assetManager.loadGLTF(assetPath).then((gltf) => {
+    if (gltf) {
+      try {
+        const clonedModel = assetManager.cloneScene(gltf);
+        silhouette.body.visible = false;
+        rig.root.add(clonedModel);
+        rig.isAssetLoaded = true;
+
+        if (gltf.animations && gltf.animations.length > 0) {
+          const mixer = new THREE.AnimationMixer(clonedModel);
+          const actions: Record<string, THREE.AnimationAction> = {};
+          gltf.animations.forEach((clip) => {
+            actions[clip.name.toLowerCase()] = mixer.clipAction(clip);
+          });
+          rig.mixer = mixer;
+          rig.actions = actions;
+
+          const idleAction = actions['idle'] || Object.values(actions)[0];
+          if (idleAction) {
+            idleAction.play();
+            rig.currentAction = 'idle';
+          }
+        }
+      } catch (err) {
+        console.warn('Failed mounting dread-lord.glb model:', err);
+      }
+    }
+  });
+
+  return rig;
+}
+
+/**
+ * Creates enemy character rigs with asynchronous GLB loader and sleek fallback silhouettes.
+ */
+export function createEnemyMesh(type: string): CharacterRig {
+  const assetPath = `/assets/enemies/${type.replace('_', '-')}.glb`;
+  const silhouette = buildSculptedEnemySilhouette(type);
+
+  // Weapon attachment
+  const weapon = new THREE.Group();
+  weapon.position.set(0, -0.36, 0.12);
+  silhouette.rightArm.add(weapon);
+
+  if (type === 'shadow_archer') {
+    // Holographic energy bow
+    const bowGeo = new THREE.TorusGeometry(0.36, 0.025, 8, 16, Math.PI);
+    const bowMat = new THREE.MeshStandardMaterial({
+      color: 0xcc00ff,
+      emissive: 0xcc00ff,
+      emissiveIntensity: 2.5,
+    });
+    const bow = new THREE.Mesh(bowGeo, bowMat);
+    bow.rotation.y = Math.PI / 2;
+    weapon.add(bow);
+  } else {
+    // Dark energy blade
+    const bladeGeo = new THREE.ConeGeometry(0.045, 0.95, 6);
+    bladeGeo.rotateX(Math.PI);
+    bladeGeo.translate(0, 0.45, 0);
+    const bladeMat = new THREE.MeshStandardMaterial({
+      color: 0xff1133,
+      emissive: 0xff0022,
+      emissiveIntensity: 2.2,
+    });
+    weapon.add(new THREE.Mesh(bladeGeo, bladeMat));
+  }
+
+  const rig: CharacterRig = {
+    root: silhouette.root,
+    body: silhouette.body,
+    head: silhouette.head,
+    leftArm: silhouette.leftArm,
+    rightArm: silhouette.rightArm,
+    leftLeg: silhouette.leftLeg,
+    rightLeg: silhouette.rightLeg,
     weapon,
     animTime: 0,
     isHero: false,
+    isAssetLoaded: false,
+    assetPath,
+    characterType: type,
+    silhouetteMesh: silhouette.body,
   };
+
+  // Attempt to load enemy GLB
+  assetManager.loadGLTF(assetPath).then((gltf) => {
+    if (gltf) {
+      try {
+        const clonedModel = assetManager.cloneScene(gltf);
+        silhouette.body.visible = false;
+        rig.root.add(clonedModel);
+        rig.isAssetLoaded = true;
+
+        if (gltf.animations && gltf.animations.length > 0) {
+          const mixer = new THREE.AnimationMixer(clonedModel);
+          const actions: Record<string, THREE.AnimationAction> = {};
+          gltf.animations.forEach((clip) => {
+            actions[clip.name.toLowerCase()] = mixer.clipAction(clip);
+          });
+          rig.mixer = mixer;
+          rig.actions = actions;
+
+          const idleAction = actions['idle'] || Object.values(actions)[0];
+          if (idleAction) {
+            idleAction.play();
+            rig.currentAction = 'idle';
+          }
+        }
+      } catch (err) {
+        console.warn(`Failed mounting ${assetPath}:`, err);
+      }
+    }
+  });
+
+  return rig;
 }
