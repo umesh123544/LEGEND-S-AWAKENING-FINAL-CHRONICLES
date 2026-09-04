@@ -51,28 +51,31 @@ export const HUD: React.FC<HUDProps> = ({
   return (
     <div id="hud-container" className="absolute inset-0 pointer-events-none select-none overflow-hidden font-['Rajdhani']">
       {/* Top Bar Header Area */}
-      <div className="absolute top-0 w-full z-30 px-4 sm:px-8 pt-4 sm:pt-6 flex justify-between items-start">
-        {/* --- TOP-LEFT: HERO VITAL STATUS (Sophisticated Dark Glass Panel) --- */}
-        <div id="hero-vital-panel" className="glass-panel p-3.5 sm:p-4 rounded-2xl flex items-center gap-3.5 w-64 sm:w-80 pointer-events-auto shadow-2xl">
+      <div
+        className="absolute top-0 w-full z-30 px-3 sm:px-8 pt-3 sm:pt-6 flex justify-between items-start"
+        style={{ paddingTop: 'max(12px, env(safe-area-inset-top, 12px))' }}
+      >
+        {/* --- TOP-LEFT: HERO VITAL STATUS (Responsive Glass Panel) --- */}
+        <div id="hero-vital-panel" className="glass-panel p-2.5 sm:p-4 rounded-xl sm:rounded-2xl flex items-center gap-2.5 sm:gap-3.5 w-48 sm:w-64 md:w-80 pointer-events-auto shadow-2xl">
           {/* Circular Hero Emblem with Cyan Aura Glow */}
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-cyan-400 overflow-hidden bg-slate-900/90 flex items-center justify-center relative shrink-0 hero-glow">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-cyan-400 rounded-sm rotate-45 hero-glow flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-slate-950 -rotate-45" />
+          <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full border-2 border-cyan-400 overflow-hidden bg-slate-900/90 flex items-center justify-center relative shrink-0 hero-glow">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-cyan-400 rounded-sm rotate-45 hero-glow flex items-center justify-center">
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-950 -rotate-45" />
             </div>
           </div>
 
           <div className="flex-1 min-w-0">
             <div className="flex justify-between items-end mb-1">
-              <span className="text-xs font-bold tracking-widest text-cyan-400 uppercase italic truncate">
+              <span className="text-[11px] sm:text-xs font-bold tracking-widest text-cyan-400 uppercase italic truncate">
                 Aura Vanguard
               </span>
-              <span className="text-[11px] opacity-70 font-mono">
+              <span className="text-[10px] sm:text-[11px] opacity-70 font-mono">
                 LVL {stats.level}
               </span>
             </div>
 
             {/* Health Bar (Sophisticated Gradient) */}
-            <div className="w-full h-2.5 sm:h-3 bg-slate-900 rounded-full overflow-hidden mb-1.5 p-0">
+            <div className="w-full h-2 sm:h-3 bg-slate-900 rounded-full overflow-hidden mb-1 p-0">
               <div
                 style={{ width: `${hpPercent}%` }}
                 className="health-bar h-full rounded-full transition-all duration-200"
@@ -193,9 +196,16 @@ export const HUD: React.FC<HUDProps> = ({
       ))}
 
       {/* --- BOTTOM SECTION: CONTROLS & ABILITIES --- */}
-      <div className="absolute bottom-0 w-full z-30 px-4 sm:px-8 pb-4 sm:pb-6 flex justify-between items-end">
-        {/* --- BOTTOM-LEFT: KEYBOARD MOVEMENT & EXPERIENCE GUIDE (Sophisticated Dark) --- */}
-        <div className="hidden sm:flex gap-4 items-end pointer-events-none">
+      <div
+        className="absolute bottom-0 w-full z-30 px-3 sm:px-8 pb-3 sm:pb-6 flex justify-between items-end pointer-events-none"
+        style={{
+          paddingBottom: 'max(14px, env(safe-area-inset-bottom, 14px))',
+          paddingRight: 'max(14px, env(safe-area-inset-right, 14px))',
+          paddingLeft: 'max(14px, env(safe-area-inset-left, 14px))',
+        }}
+      >
+        {/* --- BOTTOM-LEFT: KEYBOARD MOVEMENT & EXPERIENCE GUIDE (Desktop only) --- */}
+        <div className="hidden md:flex gap-4 items-end pointer-events-none">
           {/* Movement Keys Display */}
           <div className="flex flex-col gap-1 mb-1">
             <div className="text-[10px] font-bold opacity-40 uppercase tracking-tighter font-mono">
@@ -231,21 +241,24 @@ export const HUD: React.FC<HUDProps> = ({
           </div>
         </div>
 
-        {/* --- BOTTOM-RIGHT: ACTION BAR & ULTIMATE AWAKEN (Sophisticated Dark) --- */}
-        <div id="action-buttons-bar" className="flex items-center gap-2.5 sm:gap-3.5 ml-auto pointer-events-auto">
-          {/* Secondary Skills: Dash, Q, E */}
-          <div className="flex items-center gap-2 sm:gap-3">
+        {/* --- BOTTOM-RIGHT: ACTION BAR & COMBAT CLUSTER (Mobile-Optimized & Desktop-Ready) --- */}
+        <div
+          id="action-buttons-bar"
+          className="flex flex-col sm:flex-row items-end gap-1.5 sm:gap-3 ml-auto pointer-events-auto"
+        >
+          {/* Row 1 on Mobile: Secondary Skills (Dash, Q, E) */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
             {/* Dash (Space) */}
             <button
               id="btn-action-dash"
               onClick={onDash}
               disabled={abilityCooldowns.auraDash > 0}
-              className="w-12 h-12 sm:w-14 sm:h-14 glass-panel rounded-full flex flex-col items-center justify-center border-white/10 hover:border-cyan-400/50 active:scale-95 transition-all text-cyan-300 disabled:opacity-40"
+              className="w-10 h-10 sm:w-13 sm:h-13 glass-panel rounded-full flex flex-col items-center justify-center border-white/10 hover:border-cyan-400/50 active:scale-95 transition-all text-cyan-300 disabled:opacity-40"
               title="Aura Dash [Space]"
             >
-              <div className="text-[9px] font-bold text-white/50 mb-0.5 font-mono">SPC</div>
-              <div className="w-5 h-5 bg-cyan-400/10 rounded flex items-center justify-center border border-cyan-400/40">
-                <Zap className="w-3.5 h-3.5 text-cyan-400" />
+              <div className="hidden sm:block text-[8px] font-bold text-white/50 mb-0.5 font-mono">SPC</div>
+              <div className="w-4 h-4 sm:w-5 sm:h-5 bg-cyan-400/10 rounded flex items-center justify-center border border-cyan-400/40">
+                <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-400" />
               </div>
             </button>
 
@@ -254,12 +267,12 @@ export const HUD: React.FC<HUDProps> = ({
               id="btn-ability-q"
               onClick={onAbilityQ}
               disabled={abilityCooldowns.energySlash > 0}
-              className="w-12 h-12 sm:w-14 sm:h-14 glass-panel rounded-full flex flex-col items-center justify-center border-white/10 hover:border-cyan-400/50 active:scale-95 transition-all text-cyan-300 disabled:opacity-40"
+              className="w-10 h-10 sm:w-13 sm:h-13 glass-panel rounded-full flex flex-col items-center justify-center border-white/10 hover:border-cyan-400/50 active:scale-95 transition-all text-cyan-300 disabled:opacity-40"
               title="Energy Slash [Q]"
             >
-              <div className="text-[9px] font-bold text-white/50 mb-0.5 font-mono">Q</div>
-              <div className="w-5 h-5 bg-cyan-400/10 rounded flex items-center justify-center border border-cyan-400/40">
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+              <div className="hidden sm:block text-[8px] font-bold text-white/50 mb-0.5 font-mono">Q</div>
+              <div className="w-4 h-4 sm:w-5 sm:h-5 bg-cyan-400/10 rounded flex items-center justify-center border border-cyan-400/40">
+                <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-400" />
               </div>
             </button>
 
@@ -268,60 +281,62 @@ export const HUD: React.FC<HUDProps> = ({
               id="btn-ability-e"
               onClick={onAbilityE}
               disabled={abilityCooldowns.groundBreaker > 0}
-              className="w-12 h-12 sm:w-14 sm:h-14 glass-panel rounded-full flex flex-col items-center justify-center border-white/10 hover:border-cyan-400/50 active:scale-95 transition-all text-cyan-300 disabled:opacity-40"
+              className="w-10 h-10 sm:w-13 sm:h-13 glass-panel rounded-full flex flex-col items-center justify-center border-white/10 hover:border-cyan-400/50 active:scale-95 transition-all text-cyan-300 disabled:opacity-40"
               title="Ground Breaker [E]"
             >
-              <div className="text-[9px] font-bold text-white/50 mb-0.5 font-mono">E</div>
-              <div className="w-5 h-5 bg-cyan-400/10 rounded flex items-center justify-center border border-cyan-400/40">
-                <Flame className="w-3.5 h-3.5 text-cyan-400" />
+              <div className="hidden sm:block text-[8px] font-bold text-white/50 mb-0.5 font-mono">E</div>
+              <div className="w-4 h-4 sm:w-5 sm:h-5 bg-cyan-400/10 rounded flex items-center justify-center border border-cyan-400/40">
+                <Flame className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-400" />
               </div>
             </button>
           </div>
 
-          {/* Primary Attack (L-Click) & Shield (R-Click) */}
-          <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-            <button
-              id="btn-action-attack"
-              onClick={onAttack}
-              className="w-12 h-12 sm:w-13 sm:h-13 glass-panel rounded-xl flex flex-col items-center justify-center border-white/10 hover:border-cyan-400/50 active:scale-95 transition-all text-cyan-300 group"
-              title="Blade Combo [Left Click]"
-            >
-              <Sword className="w-5 h-5 text-cyan-300 group-hover:scale-110 transition-transform" />
-              <span className="text-[8px] font-bold font-mono opacity-50 mt-0.5">L-CLICK</span>
-            </button>
-
+          {/* Row 2 on Mobile: Core Combat (Shield, Primary Attack, Awaken Ultimate) */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
+            {/* Shield (R-Click) */}
             <button
               id="btn-action-shield"
               onMouseDown={onShieldStart}
               onMouseUp={onShieldEnd}
               onTouchStart={onShieldStart}
               onTouchEnd={onShieldEnd}
-              className="w-12 h-12 sm:w-13 sm:h-13 glass-panel rounded-xl flex flex-col items-center justify-center border-white/10 hover:border-cyan-400/50 active:scale-95 transition-all text-cyan-300 group"
+              className="w-11 h-11 sm:w-13 sm:h-13 glass-panel rounded-xl flex flex-col items-center justify-center border-white/10 hover:border-cyan-400/50 active:scale-95 transition-all text-cyan-300 group"
               title="Hold Shield [Right Click]"
             >
-              <Shield className="w-5 h-5 text-cyan-300 group-hover:scale-110 transition-transform" />
-              <span className="text-[8px] font-bold font-mono opacity-50 mt-0.5">R-CLICK</span>
+              <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-300 group-hover:scale-110 transition-transform" />
+              <span className="text-[7px] sm:text-[8px] font-bold font-mono opacity-50 mt-0.5">SHIELD</span>
             </button>
-          </div>
 
-          {/* Awaken Ultimate: LEGEND'S AWAKENING (R) */}
-          <div className="relative group">
-            <div className="absolute -inset-2 bg-cyan-500/20 blur-xl rounded-full" />
+            {/* Primary Attack (L-Click) - Large Main Button */}
             <button
-              id="btn-ability-r"
-              onClick={onAbilityR}
-              disabled={abilityCooldowns.ultimate > 0 || stats.energy < 75}
-              className="w-16 h-16 sm:w-20 sm:h-20 glass-panel rounded-full border-2 border-cyan-400 flex flex-col items-center justify-center relative overflow-hidden active:scale-95 transition-all disabled:opacity-40"
-              title="Legend's Awakening Ultimate [R]"
+              id="btn-action-attack"
+              onClick={onAttack}
+              className="w-13 h-13 sm:w-14 sm:h-14 glass-panel rounded-2xl flex flex-col items-center justify-center border-2 border-cyan-400/40 hover:border-cyan-400 active:scale-95 transition-all text-cyan-300 shadow-[0_0_15px_rgba(0,240,255,0.25)] group"
+              title="Blade Combo [Left Click]"
             >
-              <div className="absolute inset-0 bg-cyan-500/10 animate-pulse" />
-              <span className="text-xs sm:text-sm font-black tracking-tighter text-cyan-400 z-10 uppercase italic">
-                Awaken
-              </span>
-              <span className="text-[9px] sm:text-[10px] font-bold text-cyan-400/80 z-10 font-mono">
-                [R] ULT
-              </span>
+              <Sword className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-300 group-hover:scale-110 transition-transform" />
+              <span className="text-[8px] font-bold font-mono text-cyan-400 mt-0.5">ATTACK</span>
             </button>
+
+            {/* Awaken Ultimate: LEGEND'S AWAKENING (R) */}
+            <div className="relative group">
+              <div className="absolute -inset-1 sm:-inset-2 bg-cyan-500/25 blur-lg rounded-full" />
+              <button
+                id="btn-ability-r"
+                onClick={onAbilityR}
+                disabled={abilityCooldowns.ultimate > 0 || stats.energy < 75}
+                className="w-12 h-12 sm:w-16 sm:h-16 glass-panel rounded-full border-2 border-cyan-400 flex flex-col items-center justify-center relative overflow-hidden active:scale-95 transition-all disabled:opacity-40"
+                title="Legend's Awakening Ultimate [R]"
+              >
+                <div className="absolute inset-0 bg-cyan-500/15 animate-pulse" />
+                <span className="text-[10px] sm:text-xs font-black tracking-tighter text-cyan-400 z-10 uppercase italic">
+                  Awaken
+                </span>
+                <span className="text-[8px] sm:text-[9px] font-bold text-cyan-400/80 z-10 font-mono">
+                  ULT
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -70,8 +70,17 @@ export default function App() {
       setUnlockedChapters(save.completedChapters.length > 0 ? [...new Set([...save.completedChapters, 1, 6])] : [1, 6]);
     }
 
-    // Touch device detection
-    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    // Touch device detection with dynamic resize support
+    const checkTouch = () => {
+      setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth <= 840);
+    };
+    checkTouch();
+    window.addEventListener('resize', checkTouch);
+    window.addEventListener('touchstart', checkTouch, { once: true });
+
+    return () => {
+      window.removeEventListener('resize', checkTouch);
+    };
   }, []);
 
   // Save game helper
@@ -333,9 +342,15 @@ export default function App() {
             }}
           />
 
-          {/* Mobile Virtual Joystick (on touch screens or mobile) */}
+          {/* Mobile Virtual Joystick with Safe-Area Inset Support */}
           {isTouchDevice && (
-            <div className="absolute bottom-6 left-6 pointer-events-auto z-20">
+            <div
+              className="absolute z-40 pointer-events-auto"
+              style={{
+                bottom: 'max(16px, env(safe-area-inset-bottom, 16px))',
+                left: 'max(16px, env(safe-area-inset-left, 16px))',
+              }}
+            >
               <VirtualJoystick onMove={(x, y) => engineRef.current?.setJoystick(x, y)} />
             </div>
           )}

@@ -40,7 +40,20 @@ export class AssetManager {
     }
 
     try {
-      // First do a HEAD or quick check, or directly attempt loader
+      // In Vite SPA environments, non-existent files return 200 with text/html.
+      // Pre-check with fetch HEAD to avoid GLTFLoader parsing HTML as GLTF binary.
+      try {
+        const headResp = await fetch(url, { method: 'HEAD' });
+        const contentType = headResp.headers.get('content-type') || '';
+        if (!headResp.ok || contentType.includes('text/html')) {
+          this.failedAssets.add(url);
+          return null;
+        }
+      } catch {
+        this.failedAssets.add(url);
+        return null;
+      }
+
       const gltf = await new Promise<GLTF>((resolve, reject) => {
         this.loader.load(
           url,
@@ -52,10 +65,9 @@ export class AssetManager {
 
       this.cache.set(url, gltf);
       return gltf;
-    } catch (error) {
+    } catch {
       // Gracefully mark as failed so we do not spam network requests
       this.failedAssets.add(url);
-      console.warn(`[AssetManager] Asset '${url}' not found or failed to load. Employing cybernetic fallback silhouette.`, error);
       return null;
     }
   }

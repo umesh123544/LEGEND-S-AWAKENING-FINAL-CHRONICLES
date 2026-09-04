@@ -95,6 +95,14 @@ export class GameEngine {
   // Particles
   private shockwaves: { mesh: THREE.Mesh; life: number; maxLife: number; maxRadius: number }[] = [];
 
+  // Throttled stats update timer
+  private statsUpdateTimer: number = 0;
+  private resizeObserver: ResizeObserver | null = null;
+  private sunLight: THREE.DirectionalLight | null = null;
+  private hemiLight: THREE.HemisphereLight | null = null;
+  private isSprinting: boolean = false;
+  private victoryTriggered: boolean = false;
+
   // Callbacks
   private callbacks: CombatEventCallbacks;
 
@@ -103,10 +111,10 @@ export class GameEngine {
     this.playerStats = { ...initialStats };
     this.callbacks = callbacks;
 
-    // Scene
+    // Scene with beautiful natural sky background
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x050c18);
-    this.scene.fog = new THREE.FogExp2(0x061122, 0.015);
+    this.scene.background = new THREE.Color(0x72a8e2);
+    this.scene.fog = new THREE.FogExp2(0x93c5fd, 0.007);
 
     // Camera
     const width = container.clientWidth || window.innerWidth;
@@ -120,7 +128,7 @@ export class GameEngine {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.toneMappingExposure = 1.2;
     container.appendChild(this.renderer.domElement);
 
     // Hero Setup
@@ -133,50 +141,75 @@ export class GameEngine {
     // Input listeners
     this.setupInputs();
 
-    // Resize observer
+    // Resize observer for robust responsive scaling
     window.addEventListener('resize', this.onResize);
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.onResize();
+      });
+      this.resizeObserver.observe(this.container);
+    }
   }
 
   private setupLighting() {
-    // Ambient light
-    const ambient = new THREE.AmbientLight(0x0e1b2e, 1.2);
+    // Ambient light with clear contrast
+    const ambient = new THREE.AmbientLight(0xffffff, 1.4);
     this.scene.add(ambient);
 
-    // Hemisphere light: Cyan Sky / Deep Navy Ground
-    const hemiLight = new THREE.HemisphereLight(0x00f0ff, 0x050c18, 1.25);
-    hemiLight.position.set(0, 50, 0);
-    this.scene.add(hemiLight);
+    // Hemisphere light: Natural Sky / Grass Ground
+    this.hemiLight = new THREE.HemisphereLight(0x93c5fd, 0x284218, 1.4);
+    this.hemiLight.position.set(0, 50, 0);
+    this.scene.add(this.hemiLight);
 
-    // Directional Sun with cinematic soft shadows
-    const sun = new THREE.DirectionalLight(0xaad8ff, 2.2);
-    sun.position.set(25, 45, 25);
-    sun.castShadow = true;
-    sun.shadow.mapSize.width = 2048;
-    sun.shadow.mapSize.height = 2048;
-    sun.shadow.camera.near = 0.5;
-    sun.shadow.camera.far = 160;
-    const d = 40;
-    sun.shadow.camera.left = -d;
-    sun.shadow.camera.right = d;
-    sun.shadow.camera.top = d;
-    sun.shadow.camera.bottom = -d;
-    sun.shadow.bias = -0.0005;
-    this.scene.add(sun);
+    // Directional Sun with optimized soft shadows (1024 for high mobile FPS)
+    this.sunLight = new THREE.DirectionalLight(0xfffae6, 2.2);
+    this.sunLight.position.set(30, 48, 24);
+    this.sunLight.castShadow = true;
+    this.sunLight.shadow.mapSize.width = 1024;
+    this.sunLight.shadow.mapSize.height = 1024;
+    this.sunLight.shadow.camera.near = 0.5;
+    this.sunLight.shadow.camera.far = 160;
+    const d = 42;
+    this.sunLight.shadow.camera.left = -d;
+    this.sunLight.shadow.camera.right = d;
+    this.sunLight.shadow.camera.top = d;
+    this.sunLight.shadow.camera.bottom = -d;
+    this.sunLight.shadow.bias = -0.0005;
+    this.scene.add(this.sunLight);
 
-    // Subtle Cyan Aura Point Light following the Hero
-    const cyanPoint = new THREE.PointLight(0x00f0ff, 3.0, 18);
-    cyanPoint.position.set(0, 2.2, 0);
+    // Dedicated Cyan Aura fill light following Hero
+    const cyanPoint = new THREE.PointLight(0x00f0ff, 4.0, 16);
+    cyanPoint.position.set(0, 2.2, 0.8);
     this.heroRig.root.add(cyanPoint);
   }
 
   public initChapter(chapterId: number) {
     this.currentChapter = chapterId;
 
-    // Clear previous world
+    // Clear previous world cleanly without leaks
     if (this.world) {
-      // remove old meshes
+      this.world.destroy();
+      this.world = null;
     }
     this.world = buildEnvironment(this.scene, chapterId);
+
+    // Update atmospheric lighting for chapter
+    if (this.hemiLight && this.sunLight) {
+      if (chapterId === 6) {
+        this.hemiLight.color.setHex(0xff3b4e);
+        this.hemiLight.groundColor.setHex(0x180508);
+        this.sunLight.color.setHex(0xff4422);
+        this.sunLight.intensity = 2.4;
+      } else {
+        this.hemiLight.color.setHex(0x93c5fd);
+        this.hemiLight.groundColor.setHex(0x284218);
+        this.sunLight.color.setHex(0xfffae6);
+        this.sunLight.intensity = 2.2;
+      }
+    }
+
+    // Ensure camera and viewport are synchronized
+    this.onResize();
 
     // Reset Hero Position
     this.heroRig.root.position.set(0, 0, 0);
@@ -184,6 +217,7 @@ export class GameEngine {
     this.playerYaw = 0;
     this.cameraYaw = 0;
     this.cameraPitch = 0.25;
+    this.victoryTriggered = false;
 
     // Clear existing enemies
     this.enemies.forEach(e => this.scene.remove(e.mesh));
@@ -674,6 +708,8 @@ export class GameEngine {
       // If all enemies dead or boss dead, check victory
       const allDead = this.enemies.every(e => e.state.hp <= 0);
       if (allDead) {
+        this.victoryTriggered = true;
+        this.playRigAnimation(this.heroRig, 'victory', true, 0.3);
         setTimeout(() => this.callbacks.onChapterComplete(this.currentChapter), 1200);
       }
     }
@@ -724,7 +760,11 @@ export class GameEngine {
     // Energy regeneration (passive)
     if (!this.isBlocking && this.playerStats.energy < this.playerStats.maxEnergy) {
       this.playerStats.energy = Math.min(this.playerStats.maxEnergy, this.playerStats.energy + dt * 8);
-      this.callbacks.onStatsUpdate({ ...this.playerStats });
+      this.statsUpdateTimer += dt;
+      if (this.statsUpdateTimer >= 0.12) {
+        this.statsUpdateTimer = 0;
+        this.callbacks.onStatsUpdate({ ...this.playerStats });
+      }
     }
 
     // Shield active drains small energy
@@ -733,7 +773,11 @@ export class GameEngine {
       if (this.playerStats.energy <= 0) {
         this.setShield(false);
       }
-      this.callbacks.onStatsUpdate({ ...this.playerStats });
+      this.statsUpdateTimer += dt;
+      if (this.statsUpdateTimer >= 0.12) {
+        this.statsUpdateTimer = 0;
+        this.callbacks.onStatsUpdate({ ...this.playerStats });
+      }
     }
 
     // Combo timer
@@ -813,6 +857,7 @@ export class GameEngine {
       const worldDirZ = -normX * Math.sin(camYaw) + normZ * Math.cos(camYaw);
 
       const isSprinting = (this.keys['ShiftLeft'] || this.keys['ShiftRight']) && !this.isBlocking;
+      this.isSprinting = isSprinting;
       const speedMult = this.isBlocking ? 0.45 : (isSprinting ? 1.4 : 1.0);
       const speed = this.playerStats.moveSpeed * speedMult;
 
@@ -828,7 +873,35 @@ export class GameEngine {
       const targetAngle = Math.atan2(worldDirX, -worldDirZ);
       this.playerYaw = targetAngle;
       this.heroRig.root.rotation.y = targetAngle;
+    } else {
+      this.isSprinting = false;
     }
+  }
+
+  private playRigAnimation(rig: CharacterRig, actionName: string, loop = true, fadeDuration = 0.2): void {
+    if (!rig.mixer || !rig.actions) return;
+    const key = actionName.toLowerCase();
+    const nextAction = rig.actions[key];
+    if (!nextAction) return;
+
+    if (rig.currentAction === key && nextAction.isRunning()) {
+      return;
+    }
+
+    const currentAction = rig.currentAction ? rig.actions[rig.currentAction] : null;
+    if (currentAction && currentAction !== nextAction) {
+      currentAction.fadeOut(fadeDuration);
+    }
+
+    nextAction.reset();
+    nextAction.setEffectiveTimeScale(1);
+    nextAction.setEffectiveWeight(1);
+    nextAction.clampWhenFinished = !loop;
+    nextAction.loop = loop ? THREE.LoopRepeat : THREE.LoopOnce;
+    nextAction.fadeIn(fadeDuration);
+    nextAction.play();
+
+    rig.currentAction = key;
   }
 
   private updateHeroAnimation(dt: number) {
@@ -858,6 +931,27 @@ export class GameEngine {
     // Walking / Running swing
     const isMoving = Math.hypot(this.joystickVector.x, this.joystickVector.y) > 0.05 ||
       this.keys['KeyW'] || this.keys['KeyS'] || this.keys['KeyA'] || this.keys['KeyD'];
+
+    // Update 3D Skeletal Animation Action State
+    if (this.playerStats.hp <= 0) {
+      this.playRigAnimation(this.heroRig, 'death', false, 0.2);
+    } else if (this.victoryTriggered) {
+      this.playRigAnimation(this.heroRig, 'victory', true, 0.3);
+    } else if (this.isAttacking) {
+      if (this.comboStep === 3) {
+        this.playRigAnimation(this.heroRig, 'heavy attack', false, 0.1);
+      } else {
+        this.playRigAnimation(this.heroRig, 'attack', false, 0.1);
+      }
+    } else if (this.isBlocking) {
+      this.playRigAnimation(this.heroRig, 'block', true, 0.15);
+    } else if (this.isDashing) {
+      this.playRigAnimation(this.heroRig, 'dodge', false, 0.1);
+    } else if (isMoving) {
+      this.playRigAnimation(this.heroRig, this.isSprinting ? 'run' : 'walk', true, 0.18);
+    } else {
+      this.playRigAnimation(this.heroRig, 'idle', true, 0.25);
+    }
 
     if (isMoving && !this.isAttacking) {
       const walkSpeed = 10;
@@ -914,6 +1008,7 @@ export class GameEngine {
       }
 
       if (enemy.state.state === 'dead') {
+        this.playRigAnimation(enemy.rig, 'death', false, 0.2);
         // Fade out
         enemy.mesh.position.y -= dt * 0.8;
         if (enemy.mesh.position.y < -3) {
@@ -924,6 +1019,7 @@ export class GameEngine {
 
       // Handle Stagger
       if (enemy.isStaggered) {
+        this.playRigAnimation(enemy.rig, 'hit reaction', false, 0.1);
         enemy.staggerTimer -= dt;
         if (enemy.staggerTimer <= 0) {
           enemy.isStaggered = false;
@@ -944,6 +1040,7 @@ export class GameEngine {
       // AI States
       if (distToHero > attackDist) {
         // Chase hero
+        this.playRigAnimation(enemy.rig, enemy.state.isBoss ? 'run' : 'walk', true, 0.2);
         const dir = new THREE.Vector3().subVectors(heroPos, ePos).normalize();
         ePos.addScaledVector(dir, enemy.state.speed * dt);
 
@@ -956,7 +1053,10 @@ export class GameEngine {
         enemy.attackCooldown -= dt;
         if (enemy.attackCooldown <= 0) {
           enemy.attackCooldown = enemy.state.isBoss ? 1.8 : 2.2;
+          this.playRigAnimation(enemy.rig, 'attack', false, 0.1);
           this.performEnemyAttack(enemy);
+        } else {
+          this.playRigAnimation(enemy.rig, 'idle', true, 0.25);
         }
       }
     }
@@ -1072,25 +1172,42 @@ export class GameEngine {
   }
 
   private updateCamera(dt: number) {
+    const heroPos = this.heroRig.root.position;
+    const targetLookAt = heroPos.clone().setY(heroPos.y + 1.6);
+
     // Dynamic combat zoom (5-7 meters behind Hero)
     if (!this.isUltimateActive) {
-      const heroPos = this.heroRig.root.position;
       let hasNearEnemy = false;
+      let closestEnemyPos: THREE.Vector3 | null = null;
+      let closestDist = 9.0;
+
       for (let i = 0; i < this.enemies.length; i++) {
         const e = this.enemies[i];
-        if (e.state.state !== 'dead' && e.mesh.position.distanceTo(heroPos) < 7.0) {
-          hasNearEnemy = true;
-          break;
+        if (e.state.state !== 'dead') {
+          const d = e.mesh.position.distanceTo(heroPos);
+          if (d < 7.0) {
+            hasNearEnemy = true;
+          }
+          if (d < closestDist) {
+            closestDist = d;
+            closestEnemyPos = e.mesh.position;
+          }
         }
       }
-      this.targetCameraDistance = hasNearEnemy ? 5.4 : 6.6;
+
+      // 5-7m distance as requested by user
+      this.targetCameraDistance = hasNearEnemy ? 5.6 : 6.8;
+
+      // Smooth combat auto-framing: offset lookAt towards closest enemy to keep both Hero and Enemy in frame
+      if (closestEnemyPos) {
+        const combatMidPoint = new THREE.Vector3().addVectors(heroPos, closestEnemyPos).multiplyScalar(0.5);
+        combatMidPoint.y = heroPos.y + 1.5;
+        targetLookAt.lerp(combatMidPoint, 0.35);
+      }
     }
 
     // Smooth camera distance lerp
     this.cameraDistance = THREE.MathUtils.lerp(this.cameraDistance, this.targetCameraDistance, dt * 6);
-
-    const heroPos = this.heroRig.root.position;
-    const targetLookAt = heroPos.clone().setY(heroPos.y + 1.6);
 
     // Calculate camera position based on yaw, pitch, and distance
     const cx = heroPos.x + Math.sin(this.cameraYaw) * Math.cos(this.cameraPitch) * this.cameraDistance;
@@ -1126,9 +1243,18 @@ export class GameEngine {
   public destroy() {
     this.stop();
     window.removeEventListener('resize', this.onResize);
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
+    if (this.world) {
+      this.world.destroy();
+      this.world = null;
+    }
     if (this.renderer.domElement.parentNode) {
       this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);
     }
+    this.renderer.dispose();
     soundManager.stopMusic();
   }
 }
