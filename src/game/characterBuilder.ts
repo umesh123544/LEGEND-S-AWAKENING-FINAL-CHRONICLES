@@ -1121,6 +1121,24 @@ export function createHeroCharacter(): CharacterRig {
     if (gltf) {
       try {
         const clonedModel = assetManager.cloneScene(gltf);
+
+        // Auto-fit: normalize scale to a standard hero height and plant feet on the ground.
+        // This keeps custom/replacement models (which may be authored at any arbitrary
+        // scale/pivot) sized and positioned consistently with the rest of the game world.
+        const HERO_TARGET_HEIGHT = 1.9;
+        const rawBox = new THREE.Box3().setFromObject(clonedModel);
+        const rawSize = rawBox.getSize(new THREE.Vector3());
+        if (rawSize.y > 0.0001) {
+          const fitScale = HERO_TARGET_HEIGHT / rawSize.y;
+          clonedModel.scale.setScalar(fitScale);
+        }
+        const fittedBox = new THREE.Box3().setFromObject(clonedModel);
+        clonedModel.position.y -= fittedBox.min.y;
+        // Re-center on X/Z so an off-center pivot doesn't offset the character from the rig root.
+        const fittedCenter = fittedBox.getCenter(new THREE.Vector3());
+        clonedModel.position.x -= fittedCenter.x;
+        clonedModel.position.z -= fittedCenter.z;
+
         // Hide procedural silhouette and mount high-fidelity model
         silhouette.body.visible = false;
         rig.root.add(clonedModel);
