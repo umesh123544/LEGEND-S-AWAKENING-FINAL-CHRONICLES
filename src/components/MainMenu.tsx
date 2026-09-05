@@ -25,7 +25,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   return (
     <div
       id="main-menu-screen"
-      className="relative w-full h-full flex flex-col justify-between overflow-y-auto overflow-x-hidden bg-[#050508] text-white font-['Rajdhani'] select-none"
+      className="relative w-full h-full flex flex-col justify-between overflow-y-auto overflow-x-hidden bg-[#050508] text-white font-['Rajdhani'] select-none pb-6 md:pb-0"
     >
       {/* Dynamic Visual Split Background (Hero Cyan Glow vs Villain Red Glow) */}
       <div className="absolute inset-0 flex pointer-events-none">
@@ -35,7 +35,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-cyan-400/20 to-transparent animate-pulse" />
 
           {/* Hero Cyber Emblem */}
-          <div className="absolute bottom-16 left-12 opacity-40 flex flex-col items-start">
+          <div className="hidden md:flex absolute bottom-16 left-12 opacity-40 flex-col items-start">
             <div className="w-20 h-20 rounded-2xl glass-panel border-cyan-400/40 flex items-center justify-center hero-glow">
               <Sparkles className="w-10 h-10 text-cyan-400" />
             </div>
@@ -51,7 +51,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           <div className="absolute top-0 right-1/4 w-px h-full bg-gradient-to-b from-transparent via-rose-500/20 to-transparent animate-pulse" />
 
           {/* Villain Spiked Emblem */}
-          <div className="absolute bottom-16 right-12 opacity-40 flex flex-col items-end">
+          <div className="hidden md:flex absolute bottom-16 right-12 opacity-40 flex-col items-end">
             <div className="w-20 h-20 rounded-2xl glass-panel border-red-500/40 flex items-center justify-center boss-glow">
               <Skull className="w-10 h-10 text-red-500" />
             </div>
@@ -72,33 +72,33 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       </div>
 
       {/* Top Header / Status bar */}
-      <div className="relative z-20 px-6 sm:px-10 pt-6 flex justify-between items-center">
-        <div className="flex items-center gap-2 text-xs font-mono text-cyan-400/90 tracking-wider">
+      <div className="relative z-20 px-4 sm:px-10 pt-4 sm:pt-6 flex justify-between items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-cyan-400/90 tracking-wider">
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-          SYSTEM STABLE // SOPHISTICATED DARK v1.0.4
+          SYSTEM STABLE
         </div>
         {hasSaveGame && (
-          <div className="text-xs font-mono glass-panel border-cyan-400/30 text-cyan-300 px-3.5 py-1.5 rounded-xl shadow-sm">
-            SAVED OPERATIVE: <span className="font-bold text-white">LVL {playerLevel}</span>
+          <div className="text-[11px] sm:text-xs font-mono glass-panel border-cyan-400/30 text-cyan-300 px-3 py-1.5 rounded-xl shadow-sm ml-auto">
+            LVL {playerLevel}
           </div>
         )}
       </div>
 
       {/* Center Cinematic Title & Branding */}
       <div className="relative z-20 text-center max-w-4xl mx-auto px-4 my-auto">
-        <div className="inline-block px-4 py-1 rounded-full glass-panel border-cyan-400/30 text-cyan-300 text-xs font-bold tracking-[0.4em] uppercase mb-4 shadow-sm">
+        <div className="inline-block px-3 sm:px-4 py-1 rounded-full glass-panel border-cyan-400/30 text-cyan-300 text-[10px] sm:text-xs font-bold tracking-[0.15em] sm:tracking-[0.4em] uppercase mb-4 shadow-sm max-w-full">
           3D Action-Adventure RPG
         </div>
 
-        <h1 className="text-4xl sm:text-6xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-100 to-slate-400 font-['Orbitron'] tracking-tight drop-shadow-[0_0_25px_rgba(255,255,255,0.2)]">
+        <h1 className="text-3xl sm:text-6xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-100 to-slate-400 font-['Orbitron'] tracking-tight break-words px-1">
           LEGEND'S AWAKENING
         </h1>
 
-        <h2 className="text-xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-slate-200 to-red-500 font-['Orbitron'] tracking-[0.3em] uppercase mt-2 drop-shadow-[0_0_20px_rgba(34,211,238,0.4)]">
+        <h2 className="text-base sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-slate-200 to-red-500 font-['Orbitron'] tracking-[0.08em] sm:tracking-[0.3em] uppercase mt-2 drop-shadow-[0_0_20px_rgba(34,211,238,0.4)] break-words px-1">
           FINAL CHRONICLES
         </h2>
 
-        <p className="text-sm sm:text-base text-slate-400 max-w-xl mx-auto mt-4 leading-relaxed font-sans">
+        <p className="text-xs sm:text-base text-slate-400 max-w-xl mx-auto mt-4 leading-relaxed font-sans px-2">
           Reclaim the ancient AURA energy. Master high-frequency energy sword combos, holographic shields, and devastating powers to confront The Dread Lord.
         </p>
 
@@ -140,35 +140,35 @@ export const MainMenu: React.FC<MainMenuProps> = ({
         </div>
 
         {/* Secondary Utility Buttons */}
-        <div className="mt-4 flex items-center justify-center gap-2.5">
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2 px-2">
           <button
             id="btn-menu-character"
             onClick={onOpenCharacter}
-            className="px-4 py-2 rounded-xl glass-panel border-white/10 hover:border-cyan-400/40 text-xs font-bold text-slate-300 hover:text-cyan-300 font-['Orbitron'] tracking-wider flex items-center gap-1.5 transition-all"
+            className="px-3 sm:px-4 py-2 rounded-xl glass-panel border-white/10 hover:border-cyan-400/40 text-[11px] sm:text-xs font-bold text-slate-300 hover:text-cyan-300 font-['Orbitron'] tracking-wider flex items-center gap-1.5 transition-all whitespace-nowrap"
           >
-            <User className="w-3.5 h-3.5" /> CHARACTER
+            <User className="w-3.5 h-3.5 shrink-0" /> CHARACTER
           </button>
 
           <button
             id="btn-menu-abilities"
             onClick={onOpenAbilities}
-            className="px-4 py-2 rounded-xl glass-panel border-white/10 hover:border-cyan-400/40 text-xs font-bold text-slate-300 hover:text-cyan-300 font-['Orbitron'] tracking-wider flex items-center gap-1.5 transition-all"
+            className="px-3 sm:px-4 py-2 rounded-xl glass-panel border-white/10 hover:border-cyan-400/40 text-[11px] sm:text-xs font-bold text-slate-300 hover:text-cyan-300 font-['Orbitron'] tracking-wider flex items-center gap-1.5 transition-all whitespace-nowrap"
           >
-            <Zap className="w-3.5 h-3.5" /> ABILITIES
+            <Zap className="w-3.5 h-3.5 shrink-0" /> ABILITIES
           </button>
 
           <button
             id="btn-menu-settings"
             onClick={onOpenSettings}
-            className="px-4 py-2 rounded-xl glass-panel border-white/10 hover:border-cyan-400/40 text-xs font-bold text-slate-300 hover:text-cyan-300 font-['Orbitron'] tracking-wider flex items-center gap-1.5 transition-all"
+            className="px-3 sm:px-4 py-2 rounded-xl glass-panel border-white/10 hover:border-cyan-400/40 text-[11px] sm:text-xs font-bold text-slate-300 hover:text-cyan-300 font-['Orbitron'] tracking-wider flex items-center gap-1.5 transition-all whitespace-nowrap"
           >
-            <Settings className="w-3.5 h-3.5" /> SETTINGS
+            <Settings className="w-3.5 h-3.5 shrink-0" /> SETTINGS
           </button>
         </div>
       </div>
 
-      {/* Footer Info */}
-      <div className="relative z-20 px-6 sm:px-10 pb-6 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-500 font-mono">
+      {/* Footer Info (desktop only — kept off mobile to avoid clutter/overlap) */}
+      <div className="hidden md:flex relative z-20 px-6 sm:px-10 pb-6 flex-row justify-between items-center gap-2 text-xs text-slate-500 font-mono">
         <div>3D WebGL Action Combat System // Three.js & Web Audio</div>
         <div className="text-cyan-400/60">Controls: WASD + Mouse | Full Mobile Touch Support</div>
       </div>
