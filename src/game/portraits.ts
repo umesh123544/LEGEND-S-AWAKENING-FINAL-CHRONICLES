@@ -27,14 +27,14 @@ export type PortraitKey =
   | 'background';
 
 export const PORTRAIT_SLOTS: { key: PortraitKey; label: string; hint: string; defaultPrompt: string; removeBackground: boolean }[] = [
-  { key: 'hero', label: 'Hero (Aura Vanguard)', hint: 'The player character — used in the 3D battle world, HUD, menu and dialogue.', defaultPrompt: 'chibi style armored warrior hero, blue and gold energy armor, holding a glowing axe, full body, game character concept art, solid bright green screen background, chroma key green', removeBackground: true },
-  { key: 'villain', label: 'Villain (The Dread Lord)', hint: 'The final boss — used in the 3D battle world, menu and dialogue.', defaultPrompt: 'dark armored villain, glowing red eyes, spiked black and crimson armor, full body, menacing, game character concept art, solid bright green screen background, chroma key green', removeBackground: true },
-  { key: 'enemy_dark_soldier', label: 'Enemy: Dark Soldier', hint: 'Common enemy type in the 3D battle world.', defaultPrompt: 'dark soldier grunt enemy, black armor, full body, game character concept art, solid bright green screen background, chroma key green', removeBackground: true },
-  { key: 'enemy_shadow_archer', label: 'Enemy: Shadow Archer', hint: 'Ranged enemy type in the 3D battle world.', defaultPrompt: 'shadow archer enemy, hooded, holding a bow, full body, game character concept art, solid bright green screen background, chroma key green', removeBackground: true },
-  { key: 'enemy_aura_hunter', label: 'Enemy: Aura Hunter', hint: 'Enemy type in the 3D battle world.', defaultPrompt: 'aura hunter enemy, sleek cyber armor, full body, game character concept art, solid bright green screen background, chroma key green', removeBackground: true },
-  { key: 'enemy_dark_guardian', label: 'Enemy: Dark Guardian', hint: 'Tanky enemy type in the 3D battle world.', defaultPrompt: 'heavy dark guardian enemy, huge shield, bulky armor, full body, game character concept art, solid bright green screen background, chroma key green', removeBackground: true },
-  { key: 'enemy_demon_beast', label: 'Enemy: Demon Beast', hint: 'Monster enemy type in the 3D battle world.', defaultPrompt: 'demon beast monster enemy, clawed, menacing, full body, game character concept art, solid bright green screen background, chroma key green', removeBackground: true },
-  { key: 'enemy_mini_boss', label: 'Enemy: Mini Boss', hint: 'Mini-boss enemy type in the 3D battle world.', defaultPrompt: 'powerful mini boss enemy, ornate dark armor, full body, game character concept art, solid bright green screen background, chroma key green', removeBackground: true },
+  { key: 'hero', label: 'Hero (Aura Vanguard)', hint: 'The player character — used in the 3D battle world, HUD, menu and dialogue.', defaultPrompt: 'chibi style armored warrior hero, blue and gold energy armor, holding a glowing axe, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true },
+  { key: 'villain', label: 'Villain (The Dread Lord)', hint: 'The final boss — used in the 3D battle world, menu and dialogue.', defaultPrompt: 'dark armored villain, glowing red eyes, spiked black and crimson armor, full body, menacing, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true },
+  { key: 'enemy_dark_soldier', label: 'Enemy: Dark Soldier', hint: 'Common enemy type in the 3D battle world.', defaultPrompt: 'dark soldier grunt enemy, black armor, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true },
+  { key: 'enemy_shadow_archer', label: 'Enemy: Shadow Archer', hint: 'Ranged enemy type in the 3D battle world.', defaultPrompt: 'shadow archer enemy, hooded, holding a bow, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true },
+  { key: 'enemy_aura_hunter', label: 'Enemy: Aura Hunter', hint: 'Enemy type in the 3D battle world.', defaultPrompt: 'aura hunter enemy, sleek cyber armor, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true },
+  { key: 'enemy_dark_guardian', label: 'Enemy: Dark Guardian', hint: 'Tanky enemy type in the 3D battle world.', defaultPrompt: 'heavy dark guardian enemy, huge shield, bulky armor, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true },
+  { key: 'enemy_demon_beast', label: 'Enemy: Demon Beast', hint: 'Monster enemy type in the 3D battle world.', defaultPrompt: 'demon beast monster enemy, clawed, menacing, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true },
+  { key: 'enemy_mini_boss', label: 'Enemy: Mini Boss', hint: 'Mini-boss enemy type in the 3D battle world.', defaultPrompt: 'powerful mini boss enemy, ornate dark armor, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true },
   { key: 'aura', label: 'A.U.R.A. (AI Companion)', hint: 'Shown in dialogue when A.U.R.A. speaks.', defaultPrompt: 'friendly holographic AI orb companion, glowing cyan, game concept art', removeBackground: false },
   { key: 'npc', label: 'Side Character (NPC)', hint: 'Shown in dialogue for Commander Jax, etc.', defaultPrompt: 'game NPC character portrait, military commander, game concept art', removeBackground: false },
   { key: 'background', label: 'Battle Background / Location', hint: 'Backdrop shown behind the 3D battle world.', defaultPrompt: 'dark futuristic ruined city battle arena, dramatic lighting, wide background concept art', removeBackground: false },
@@ -163,13 +163,16 @@ function buildGenerationUrl(prompt: string, width: number, height: number, seed:
 }
 
 /**
- * Loads an image and keys out its green-screen background (the prompts ask the AI for a
- * "solid bright green screen background"), producing a transparent PNG so the character
- * renders as a clean cutout in the 3D world instead of a rectangular photo card. Free,
- * runs entirely client-side on a <canvas> — no paid background-removal API needed.
+ * Loads an image and removes its background via a flood-fill from the image edges: it
+ * samples the border color, then grows outward-in from every edge pixel, clearing alpha
+ * on anything connected to the border that's close to that color. This works regardless
+ * of what background color the AI actually used (green, grey, white, gradient studio
+ * backdrop, etc.) and — unlike a flat global color threshold — leaves same-colored regions
+ * *inside* the character (e.g. white armor) untouched, since they aren't edge-connected.
+ * Free, runs entirely client-side on a <canvas> — no paid background-removal API needed.
  * Falls back to the original (un-keyed) image if pixel access is blocked (e.g. CORS).
  */
-async function removeGreenScreen(imageUrl: string): Promise<Blob | null> {
+async function removeUniformBackground(imageUrl: string): Promise<Blob | null> {
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const el = new Image();
@@ -179,36 +182,84 @@ async function removeGreenScreen(imageUrl: string): Promise<Blob | null> {
       el.src = imageUrl;
     });
 
+    const width = img.naturalWidth;
+    const height = img.naturalHeight;
     const canvas = document.createElement('canvas');
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
     ctx.drawImage(img, 0, 0);
 
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
+    const idx = (x: number, y: number) => (y * width + x) * 4;
 
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-      // Bright, saturated green: G clearly dominant over both R and B.
-      const isGreen = g > 90 && g - r > 35 && g - b > 35;
-      if (isGreen) {
-        data[i + 3] = 0;
-      } else {
-        // Soften green spill on edges (e.g. hair/armor rim lit by the green backdrop)
-        // by desaturating green there instead of leaving a visible fringe.
-        const edgeGreen = g > 70 && g - r > 15 && g - b > 15;
-        if (edgeGreen) {
-          const avg = (r + b) / 2;
-          data[i + 1] = Math.round((g + avg) / 2);
-        }
-      }
+    // Reference background color = average of a sample of border pixels.
+    let rSum = 0, gSum = 0, bSum = 0, count = 0;
+    const sample = (x: number, y: number) => {
+      const i = idx(x, y);
+      rSum += data[i];
+      gSum += data[i + 1];
+      bSum += data[i + 2];
+      count++;
+    };
+    for (let x = 0; x < width; x += 3) {
+      sample(x, 0);
+      sample(x, height - 1);
     }
-    ctx.putImageData(imageData, 0, 0);
+    for (let y = 0; y < height; y += 3) {
+      sample(0, y);
+      sample(width - 1, y);
+    }
+    const refR = rSum / count;
+    const refG = gSum / count;
+    const refB = bSum / count;
 
+    const THRESHOLD = 42;
+    const FEATHER = 26;
+    const visited = new Uint8Array(width * height);
+    const queue = new Int32Array(width * height);
+    let qHead = 0;
+    let qTail = 0;
+
+    const visit = (x: number, y: number) => {
+      if (x < 0 || y < 0 || x >= width || y >= height) return;
+      const p = y * width + x;
+      if (visited[p]) return;
+      visited[p] = 1;
+      const i = p * 4;
+      const dist = Math.sqrt(
+        (data[i] - refR) ** 2 + (data[i + 1] - refG) ** 2 + (data[i + 2] - refB) ** 2
+      );
+      if (dist < THRESHOLD) {
+        data[i + 3] = 0;
+        queue[qTail++] = p;
+      } else if (dist < THRESHOLD + FEATHER) {
+        // Soften the edge instead of a hard cutout line.
+        data[i + 3] = Math.round((255 * (dist - THRESHOLD)) / FEATHER);
+      }
+    };
+
+    for (let x = 0; x < width; x++) {
+      visit(x, 0);
+      visit(x, height - 1);
+    }
+    for (let y = 0; y < height; y++) {
+      visit(0, y);
+      visit(width - 1, y);
+    }
+    while (qHead < qTail) {
+      const p = queue[qHead++];
+      const x = p % width;
+      const y = (p / width) | 0;
+      visit(x + 1, y);
+      visit(x - 1, y);
+      visit(x, y + 1);
+      visit(x, y - 1);
+    }
+
+    ctx.putImageData(imageData, 0, 0);
     return await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), 'image/png'));
   } catch (err) {
     console.warn('Background removal skipped (falling back to original image):', err);
@@ -239,7 +290,7 @@ async function generateOneFrame(
 
   if (!shouldRemoveBg) return rawUrl;
 
-  const cutoutBlob = await removeGreenScreen(rawUrl);
+  const cutoutBlob = await removeUniformBackground(rawUrl);
   if (!cutoutBlob) return rawUrl;
 
   const path = `${pathPrefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}.png`;
