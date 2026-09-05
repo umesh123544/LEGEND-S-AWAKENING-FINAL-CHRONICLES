@@ -388,3 +388,38 @@ export async function resetPortrait(key: PortraitKey): Promise<void> {
   writeLocal(key, { url: null, prompt: null, frames: null });
   notify();
 }
+
+/**
+ * Uploads an admin-provided image file (e.g. generated on pixler.dev or another sprite
+ * tool) for a single action (idle/walk/attack/jump) of a character slot, merging it into
+ * that slot's existing frame set. Files from dedicated sprite generators already come with
+ * a transparent background, so no background removal is applied here.
+ */
+export async function uploadActionFrame(key: PortraitKey, action: SpriteAction, file: File): Promise<string> {
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
+  const path = `${key}-${action}-${Date.now()}.${ext}`;
+  const { error: uploadError } = await supabase.storage
+    .from(CHARACTER_PHOTOS_BUCKET)
+    .upload(path, file, { contentType: file.type || 'image/png', upsert: true, cacheControl: '3600' });
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage.from(CHARACTER_PHOTOS_BUCKET).getPublicUrl(path);
+  const url = data.publicUrl;
+
+  const existingFrames = cache[key]?.frames ?? ({ idle: [], walk: [], attack: [], jump: [] } as ActionFrames);
+  const nextFrames: ActionFrames = { ...existingFrames, [action]: [url] };
+
+  const label = PORTRAIT_SLOTS.find((s) => s.key === key)?.label ?? key;
+  const { error: dbError } = await supabase.from('characters').upsert({
+    slot: key,
+    name: label,
+    photo_url: nextFrames.idle[0] ?? url,
+    frames: nextFrames,
+    updated_at: new Date().toISOString(),
+  });
+  if (dbError) throw dbError;
+
+  writeLocal(key, { url: nextFrames.idle[0] ?? url, prompt: cache[key]?.prompt ?? null, frames: nextFrames });
+  notify();
+  return url;
+}

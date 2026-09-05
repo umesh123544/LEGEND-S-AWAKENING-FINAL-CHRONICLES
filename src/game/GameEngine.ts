@@ -921,6 +921,9 @@ export class GameEngine {
 
   private updateSpriteFrame(rig: CharacterRig, action: 'idle' | 'walk' | 'attack' | 'jump', dt: number) {
     if (!rig.spriteFrameTextures || !rig.spriteMaterial) return;
+    const frames = rig.spriteFrameTextures[action];
+    if (!frames || frames.length === 0) return;
+
     if (action !== rig.spriteCurrentAction) {
       rig.spriteCurrentAction = action;
       rig.spriteFrameIndex = 0;
@@ -928,12 +931,12 @@ export class GameEngine {
     }
     const frameDuration = action === 'attack' ? 0.12 : action === 'walk' ? 0.16 : action === 'jump' ? 0.2 : 0.5;
     rig.spriteFrameTimer = (rig.spriteFrameTimer ?? 0) + dt;
-    if (rig.spriteFrameTimer >= frameDuration) {
+    if (rig.spriteFrameTimer >= frameDuration && frames.length > 1) {
       rig.spriteFrameTimer = 0;
-      rig.spriteFrameIndex = ((rig.spriteFrameIndex ?? 0) + 1) % 2;
+      rig.spriteFrameIndex = ((rig.spriteFrameIndex ?? 0) + 1) % frames.length;
     }
-    const frames = rig.spriteFrameTextures[action];
-    const frame = frames?.[rig.spriteFrameIndex ?? 0];
+
+    const frame = frames[(rig.spriteFrameIndex ?? 0) % frames.length];
     if (frame && rig.spriteMaterial.map !== frame) {
       rig.spriteMaterial.map = frame;
       rig.spriteMaterial.needsUpdate = true;
