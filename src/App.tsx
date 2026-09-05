@@ -25,6 +25,8 @@ import { SettingsModal } from './components/SettingsModal';
 import { PauseModal } from './components/PauseModal';
 import { VirtualJoystick } from './components/VirtualJoystick';
 import { LoadingScreen } from './components/LoadingScreen';
+import { AdminPanel } from './components/AdminPanel';
+import { initPortraitSync } from './game/portraits';
 import { assetManager } from './game/AssetManager';
 
 export default function App() {
@@ -34,6 +36,18 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingStatus, setLoadingStatus] = useState('Initializing A.U.R.A. Matrix...');
+
+  // Start syncing character portraits from Supabase as soon as the app mounts, so
+  // admin-uploaded photos show up for every player without needing a rebuild/redeploy.
+  useEffect(() => {
+    initPortraitSync();
+  }, []);
+
+  // Admin panel is only reachable via ?admin=1 in the URL, so it stays invisible to players.
+  const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+  const [showAdminEntry] = useState<boolean>(
+    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('admin') === '1'
+  );
 
   // Modals
   const [isCharacterModalOpen, setIsCharacterModalOpen] = useState(false);
@@ -311,8 +325,14 @@ export default function App() {
           onOpenAbilities={() => setIsAbilitiesModalOpen(true)}
           onOpenChapters={() => setIsChapterSelectModalOpen(true)}
           onOpenSettings={() => setIsSettingsModalOpen(true)}
+          showAdminEntry={showAdminEntry}
+          onOpenAdmin={() => setIsAdminPanelOpen(true)}
         />
       )}
+
+      {/* --- ADMIN PANEL (only reachable via ?admin=1) --- */}
+      {isAdminPanelOpen && <AdminPanel onClose={() => setIsAdminPanelOpen(false)} />}
+
 
       {/* --- SCREEN: IN-GAME PLAYING OVERLAYS --- */}
       {screen === 'playing' && (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DialogueMessage } from '../types';
 import { soundManager } from '../game/audio';
+import { getPortrait, usePortraitsVersion } from '../game/portraits';
 import { Sparkles, Skull, Bot, User } from 'lucide-react';
 
 interface DialogueModalProps {
@@ -12,6 +13,7 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({ dialogues, onCompl
   const [currentIndex, setCurrentIndex] = useState(0);
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
+  usePortraitsVersion();
 
   const currentDialogue = dialogues[currentIndex];
 
@@ -56,6 +58,7 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({ dialogues, onCompl
 
   const isVillain = currentDialogue.portrait === 'villain';
   const isAura = currentDialogue.portrait === 'aura';
+  const uploadedPortrait = getPortrait(currentDialogue.portrait);
 
   return (
     <div
@@ -85,7 +88,7 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({ dialogues, onCompl
       }`}>
         {/* Character Portrait */}
         <div
-          className={`w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border flex items-center justify-center p-2 shrink-0 ${
+          className={`w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border flex items-center justify-center p-2 shrink-0 overflow-hidden ${
             isVillain
               ? 'glass-panel-crimson border-red-500/50 boss-glow'
               : isAura
@@ -93,7 +96,9 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({ dialogues, onCompl
               : 'glass-panel-cyan border-cyan-400/50 hero-glow'
           }`}
         >
-          {isVillain ? (
+          {uploadedPortrait ? (
+            <img src={uploadedPortrait} alt={currentDialogue.speaker} className="w-full h-full object-cover rounded-xl" />
+          ) : isVillain ? (
             <div className="flex flex-col items-center justify-center text-red-500">
               <Skull className="w-10 h-10 animate-pulse drop-shadow-[0_0_8px_#ef4444]" />
               <span className="text-[10px] font-black tracking-[0.2em] mt-1.5 text-red-400 font-['Orbitron']">

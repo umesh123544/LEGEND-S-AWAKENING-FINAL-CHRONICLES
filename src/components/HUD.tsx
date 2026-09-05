@@ -1,6 +1,7 @@
 import React from 'react';
 import { Shield, Zap, Flame, Sparkles, Volume2, VolumeX, Pause, Crosshair, Sword } from 'lucide-react';
 import { DamageNumber, EnemyState, PlayerStats } from '../types';
+import { getPortrait, usePortraitsVersion } from '../game/portraits';
 
 interface HUDProps {
   stats: PlayerStats;
@@ -47,6 +48,8 @@ export const HUD: React.FC<HUDProps> = ({
   const hpPercent = Math.max(0, Math.min(100, (stats.hp / stats.maxHp) * 100));
   const energyPercent = Math.max(0, Math.min(100, (stats.energy / stats.maxEnergy) * 100));
   const xpPercent = Math.max(0, Math.min(100, (stats.xp / stats.maxXp) * 100));
+  usePortraitsVersion();
+  const heroPortrait = getPortrait('hero');
 
   return (
     <div id="hud-container" className="absolute inset-0 pointer-events-none select-none overflow-hidden font-['Rajdhani']">

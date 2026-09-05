@@ -1,5 +1,6 @@
 import React from 'react';
 import { Play, RotateCcw, User, Zap, Settings, Sparkles, Skull } from 'lucide-react';
+import { getPortrait, usePortraitsVersion } from '../game/portraits';
 
 interface MainMenuProps {
   hasSaveGame: boolean;
@@ -10,6 +11,8 @@ interface MainMenuProps {
   onOpenAbilities: () => void;
   onOpenChapters: () => void;
   onOpenSettings: () => void;
+  showAdminEntry?: boolean;
+  onOpenAdmin?: () => void;
 }
 
 export const MainMenu: React.FC<MainMenuProps> = ({
@@ -21,7 +24,13 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   onOpenAbilities,
   onOpenChapters,
   onOpenSettings,
+  showAdminEntry,
+  onOpenAdmin,
 }) => {
+  usePortraitsVersion();
+  const heroPortrait = getPortrait('hero');
+  const villainPortrait = getPortrait('villain');
+
   return (
     <div
       id="main-menu-screen"
@@ -36,8 +45,12 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
           {/* Hero Cyber Emblem */}
           <div className="hidden md:flex absolute bottom-16 left-12 opacity-40 flex-col items-start">
-            <div className="w-20 h-20 rounded-2xl glass-panel border-cyan-400/40 flex items-center justify-center hero-glow">
-              <Sparkles className="w-10 h-10 text-cyan-400" />
+            <div className="w-20 h-20 rounded-2xl glass-panel border-cyan-400/40 flex items-center justify-center hero-glow overflow-hidden">
+              {heroPortrait ? (
+                <img src={heroPortrait} alt="Hero" className="w-full h-full object-cover" />
+              ) : (
+                <Sparkles className="w-10 h-10 text-cyan-400" />
+              )}
             </div>
             <span className="text-xs font-bold text-cyan-400 mt-2 font-['Orbitron'] tracking-[0.3em] uppercase italic">
               Hero // Aura Vanguard
@@ -52,8 +65,12 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
           {/* Villain Spiked Emblem */}
           <div className="hidden md:flex absolute bottom-16 right-12 opacity-40 flex-col items-end">
-            <div className="w-20 h-20 rounded-2xl glass-panel border-red-500/40 flex items-center justify-center boss-glow">
-              <Skull className="w-10 h-10 text-red-500" />
+            <div className="w-20 h-20 rounded-2xl glass-panel border-red-500/40 flex items-center justify-center boss-glow overflow-hidden">
+              {villainPortrait ? (
+                <img src={villainPortrait} alt="Villain" className="w-full h-full object-cover" />
+              ) : (
+                <Skull className="w-10 h-10 text-red-500" />
+              )}
             </div>
             <span className="text-xs font-bold text-red-400 mt-2 font-['Orbitron'] tracking-[0.3em] uppercase italic">
               Villain // Dread Lord
@@ -81,6 +98,14 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           <div className="text-[11px] sm:text-xs font-mono glass-panel border-cyan-400/30 text-cyan-300 px-3 py-1.5 rounded-xl shadow-sm ml-auto">
             LVL {playerLevel}
           </div>
+        )}
+        {showAdminEntry && (
+          <button
+            onClick={onOpenAdmin}
+            className="text-[10px] font-mono glass-panel border-amber-400/30 text-amber-300 px-2.5 py-1.5 rounded-lg shadow-sm ml-2"
+          >
+            ADMIN
+          </button>
         )}
       </div>
 
