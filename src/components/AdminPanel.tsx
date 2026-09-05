@@ -1,10 +1,11 @@
-import React, { useState, useRef } from 'react';
-import { Lock, Upload, X, RotateCcw, ArrowLeft, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { Lock, Sparkles, X, RotateCcw, ArrowLeft, ShieldCheck } from 'lucide-react';
 import {
   PORTRAIT_SLOTS,
   PortraitKey,
   getPortrait,
-  setPortrait,
+  getPortraitPrompt,
+  generatePortrait,
   resetPortrait,
 } from '../game/portraits';
 
@@ -92,15 +93,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
         </div>
 
         <p className="text-xs sm:text-sm text-cyan-300/90 glass-panel border-cyan-400/30 rounded-xl px-4 py-3 mb-6 leading-relaxed">
-          Photos you upload here sync live to <span className="font-bold">every player, on every device</span> —
-          they're stored in Supabase, not just this browser. They replace the 2D portrait icon shown in dialogue,
-          the HUD, the main menu, and the character sheet — the in-game 3D model is separate and isn't changed
-          here.
+          Describe a character or scene in a few words and tap <span className="font-bold">Generate</span> — a free
+          AI image service creates it and it syncs live to <span className="font-bold">every player, on every
+          device</span> (via Supabase). No photo upload, no cost. Hero/Villain/Enemies render as 2D sprites in the
+          3D battle world; the Background replaces the arena backdrop.
         </p>
 
         <div className="flex flex-col gap-4">
           {PORTRAIT_SLOTS.map((slot) => (
-            <PortraitSlotEditor key={slot.key} slotKey={slot.key} label={slot.label} hint={slot.hint} />
+            <PortraitSlotEditor
+              key={slot.key}
+              slotKey={slot.key}
+              label={slot.label}
+              hint={slot.hint}
+              defaultPrompt={slot.defaultPrompt}
+              wide={slot.key === 'background'}
+            />
           ))}
         </div>
       </div>
@@ -108,32 +116,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
   );
 };
 
-const PortraitSlotEditor: React.FC<{ slotKey: PortraitKey; label: string; hint: string }> = ({
-  slotKey,
-  label,
-  hint,
-}) => {
+const PortraitSlotEditor: React.FC<{
+  slotKey: PortraitKey;
+  label: string;
+  hint: string;
+  defaultPrompt: string;
+  wide: boolean;
+}> = ({ slotKey, label, hint, defaultPrompt, wide }) => {
   const [preview, setPreview] = useState<string | null>(() => getPortrait(slotKey));
+  const [prompt, setPrompt] = useState<string>(() => getPortraitPrompt(slotKey) || defaultPrompt);
   const [error, setError] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const handleFile = async (file: File | undefined) => {
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setError('Please choose an image file.');
+  const handleGenerate = async () => {
+    if (!prompt.trim()) {
+      setError('Type a short description first.');
       return;
     }
     setError('');
-    setIsSaving(true);
+    setIsGenerating(true);
     try {
-      await setPortrait(slotKey, file);
-      setPreview(getPortrait(slotKey));
+      const url = await generatePortrait(slotKey, prompt, wide ? { width: 1024, height: 576 } : undefined);
+      setPreview(url);
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : 'Could not upload that image.');
+      setError(err instanceof Error ? err.message : 'Generation failed — try again.');
     } finally {
-      setIsSaving(false);
+      setIsGenerating(false);
     }
   };
 
@@ -144,40 +153,45 @@ const PortraitSlotEditor: React.FC<{ slotKey: PortraitKey; label: string; hint: 
       setPreview(null);
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : 'Could not remove that photo.');
+      setError(err instanceof Error ? err.message : 'Could not remove that image.');
     }
   };
 
   return (
-    <div className="glass-panel border-white/10 rounded-2xl p-4 flex items-center gap-4">
-      <div className="w-20 h-20 rounded-xl overflow-hidden bg-slate-900 border border-white/10 shrink-0 flex items-center justify-center">
+    <div className="glass-panel border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row gap-4">
+      <div
+        className={`rounded-xl overflow-hidden bg-slate-900 border border-white/10 shrink-0 flex items-center justify-center ${
+          wide ? 'w-full sm:w-32 h-20' : 'w-20 h-20'
+        }`}
+      >
         {preview ? (
           <img src={preview} alt={label} className="w-full h-full object-cover" />
         ) : (
-          <Upload className="w-6 h-6 text-slate-600" />
+          <Sparkles className="w-6 h-6 text-slate-600" />
         )}
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="font-bold text-sm text-slate-100">{label}</div>
         <div className="text-[11px] text-slate-400 mt-0.5 leading-snug">{hint}</div>
-        {error && <div className="text-[11px] text-red-400 mt-1">{error}</div>}
 
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => handleFile(e.target.files?.[0])}
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          rows={2}
+          placeholder="Describe this character or scene..."
+          className="w-full mt-2 px-3 py-2 rounded-lg bg-slate-900 border border-white/10 text-white outline-none focus:border-cyan-400/50 text-xs font-mono resize-none"
         />
+
+        {error && <div className="text-[11px] text-red-400 mt-1">{error}</div>}
 
         <div className="flex gap-2 mt-2.5">
           <button
-            onClick={() => inputRef.current?.click()}
-            disabled={isSaving}
-            className="px-3 py-1.5 rounded-lg bg-cyan-400 text-slate-950 text-[11px] font-black uppercase tracking-wider hover:brightness-110 disabled:opacity-50"
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            className="px-3 py-1.5 rounded-lg bg-cyan-400 text-slate-950 text-[11px] font-black uppercase tracking-wider hover:brightness-110 disabled:opacity-50 flex items-center gap-1.5"
           >
-            {isSaving ? 'Saving…' : preview ? 'Replace Photo' : 'Upload Photo'}
+            <Sparkles className="w-3 h-3" /> {isGenerating ? 'Generating…' : preview ? 'Regenerate' : 'Generate'}
           </button>
           {preview && (
             <button
@@ -193,8 +207,8 @@ const PortraitSlotEditor: React.FC<{ slotKey: PortraitKey; label: string; hint: 
       {preview && (
         <button
           onClick={handleReset}
-          className="w-7 h-7 rounded-lg glass-panel border-white/10 flex items-center justify-center text-slate-500 hover:text-red-400 shrink-0"
-          title="Remove photo"
+          className="w-7 h-7 rounded-lg glass-panel border-white/10 flex items-center justify-center text-slate-500 hover:text-red-400 shrink-0 self-start"
+          title="Remove image"
         >
           <X className="w-3.5 h-3.5" />
         </button>

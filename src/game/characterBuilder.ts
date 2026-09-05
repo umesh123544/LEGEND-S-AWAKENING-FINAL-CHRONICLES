@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { assetManager } from './AssetManager';
+import { getPortrait, PortraitKey } from './portraits';
 
 export interface CharacterRig {
   root: THREE.Group;
@@ -31,6 +32,14 @@ export interface CharacterRig {
   /** True when the mounted GLB has no bone-driven animation clips, so the engine should
    *  drive procedural whole-body motion on meshGroup instead of relying on the mixer. */
   needsProceduralMotion?: boolean;
+  /** True when meshGroup wraps a THREE.Sprite (AI-generated 2D billboard) rather than a
+   *  3D mesh — the engine uses spriteMaterial.rotation for "spin" effects since rotating
+   *  a billboard's own X/Y axes has no visual effect (it always faces the camera). */
+  isSprite?: boolean;
+  spriteMaterial?: THREE.SpriteMaterial;
+  /** Countdown timer (seconds) driving a brief forward lunge pulse on enemy attack for
+   *  sprite-based enemies (see updateEnemies in GameEngine.ts). */
+  attackPulseTime?: number;
 }
 
 /**
@@ -1086,6 +1095,55 @@ function buildSculptedEnemySilhouette(type: string): {
 }
 
 /**
+ * Mounts an AI-generated 2D image as a camera-facing billboard sprite onto a character rig,
+ * hiding the procedural silhouette (and its weapon/shield, since a generated character
+ * image already depicts whatever it's holding). Used for Hero, Villain and enemy types
+ * when an admin has generated an image for that slot — see src/game/portraits.ts.
+ */
+function mountBillboardSprite(
+  rig: CharacterRig,
+  silhouetteBody: THREE.Group,
+  imageUrl: string,
+  targetHeight: number
+): void {
+  silhouetteBody.visible = false;
+
+  const loader = new THREE.TextureLoader();
+  loader.load(
+    imageUrl,
+    (texture) => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+      const sprite = new THREE.Sprite(material);
+
+      const aspect = texture.image.width / texture.image.height;
+      const height = targetHeight;
+      const width = height * aspect;
+      sprite.scale.set(width, height, 1);
+      // Anchor the sprite at its bottom-center so it stands on the ground like a cutout.
+      sprite.center.set(0.5, 0);
+
+      const group = new THREE.Group();
+      group.add(sprite);
+      rig.root.add(group);
+
+      rig.meshGroup = group;
+      rig.meshBasePosition = group.position.clone();
+      rig.meshBaseRotationY = 0;
+      rig.needsProceduralMotion = true;
+      rig.isSprite = true;
+      rig.spriteMaterial = material;
+      rig.isAssetLoaded = true;
+    },
+    undefined,
+    (err) => {
+      console.warn('Failed loading generated sprite, falling back to silhouette:', err);
+      silhouetteBody.visible = true;
+    }
+  );
+}
+
+/**
  * Creates the Hero character rig with asynchronous GLB loader and sleek fallback silhouette.
  */
 export function createHeroCharacter(): CharacterRig {
@@ -1123,6 +1181,14 @@ export function createHeroCharacter(): CharacterRig {
     characterType: 'hero',
     silhouetteMesh: silhouette.body,
   };
+
+  // If the admin has generated a 2D sprite for the Hero, use that instead of loading the
+  // 3D GLB model — the sprite already depicts whatever it's holding.
+  const heroSpriteUrl = getPortrait('hero');
+  if (heroSpriteUrl) {
+    mountBillboardSprite(rig, silhouette.body, heroSpriteUrl, 1.9);
+    return rig;
+  }
 
   // Attempt to load the real hero.glb model
   assetManager.loadGLTF(assetPath).then((gltf) => {
@@ -1246,6 +1312,13 @@ export function createDreadLordCharacter(): CharacterRig {
     silhouetteMesh: silhouette.body,
   };
 
+  // If the admin has generated a 2D sprite for the Villain, use that instead of the GLB.
+  const villainSpriteUrl = getPortrait('villain');
+  if (villainSpriteUrl) {
+    mountBillboardSprite(rig, silhouette.body, villainSpriteUrl, 2.3);
+    return rig;
+  }
+
   // Attempt to load dread-lord.glb
   assetManager.loadGLTF(assetPath).then((gltf) => {
     if (gltf) {
@@ -1331,6 +1404,14 @@ export function createEnemyMesh(type: string): CharacterRig {
     characterType: type,
     silhouetteMesh: silhouette.body,
   };
+
+  // If the admin has generated a 2D sprite for this enemy type, use that instead of the GLB.
+  const enemySpriteUrl = getPortrait(`enemy_${type}` as PortraitKey);
+  if (enemySpriteUrl) {
+    const height = type === 'mini_boss' ? 2.4 : type === 'demon_beast' ? 2.1 : 1.9;
+    mountBillboardSprite(rig, silhouette.body, enemySpriteUrl, height);
+    return rig;
+  }
 
   // Attempt to load enemy GLB
   assetManager.loadGLTF(assetPath).then((gltf) => {
