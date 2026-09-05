@@ -42,13 +42,24 @@ export const PORTRAIT_SLOTS: { key: PortraitKey; label: string; hint: string; de
 
 const STORAGE_PREFIX = 'legend-awakening-portrait:';
 
+export type SpriteAction = 'idle' | 'walk' | 'attack' | 'jump';
+export type ActionFrames = Record<SpriteAction, string[]>;
+
+const POSE_SUFFIX: Record<SpriteAction, [string, string]> = {
+  idle: ['standing relaxed idle pose, arms at sides', 'standing idle pose, slight breathing shift'],
+  walk: ['mid-walk pose, left foot forward', 'mid-walk pose, right foot forward'],
+  attack: ['attacking pose, weapon raised back', 'attacking pose, weapon swinging forward, mid-strike'],
+  jump: ['crouched pose, about to jump', 'airborne jumping pose, mid-air, legs tucked'],
+};
+
 interface PortraitEntry {
   url: string | null;
   prompt: string | null;
+  frames?: ActionFrames | null;
 }
 
 const cache: Record<PortraitKey, PortraitEntry> = {} as Record<PortraitKey, PortraitEntry>;
-for (const { key } of PORTRAIT_SLOTS) cache[key] = { url: null, prompt: null };
+for (const { key } of PORTRAIT_SLOTS) cache[key] = { url: null, prompt: null, frames: null };
 
 // Seed from localStorage immediately so there's no flash of "no image" on load.
 for (const { key } of PORTRAIT_SLOTS) {
@@ -84,6 +95,11 @@ export function getPortraitPrompt(key: PortraitKey): string {
   return cache[key]?.prompt ?? PORTRAIT_SLOTS.find((s) => s.key === key)?.defaultPrompt ?? '';
 }
 
+/** Synchronous read of the 4-action (idle/walk/attack/jump) x 2-frame animation set, if generated. */
+export function getFrames(key: PortraitKey): ActionFrames | null {
+  return cache[key]?.frames ?? null;
+}
+
 /** React hook: re-renders the calling component whenever any portrait/sprite changes. */
 export function usePortraitsVersion(): number {
   const [version, setVersion] = useState(0);
@@ -106,7 +122,7 @@ export function initPortraitSync(): void {
 
   supabase
     .from('characters')
-    .select('slot, photo_url, prompt')
+    .select('slot, photo_url, prompt, frames')
     .then(({ data, error }) => {
       if (error) {
         console.warn('Sprite sync: failed to load from Supabase, using local cache only:', error.message);
@@ -116,7 +132,7 @@ export function initPortraitSync(): void {
       for (const row of data || []) {
         const key = row.slot as PortraitKey;
         if (PORTRAIT_SLOTS.some((s) => s.key === key)) {
-          writeLocal(key, { url: row.photo_url ?? null, prompt: row.prompt ?? null });
+          writeLocal(key, { url: row.photo_url ?? null, prompt: row.prompt ?? null, frames: (row as any).frames ?? null });
           changed = true;
         }
       }
@@ -126,12 +142,14 @@ export function initPortraitSync(): void {
   supabase
     .channel('portraits-sync')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'characters' }, (payload) => {
-      const row = (payload.new || payload.old) as { slot?: string; photo_url?: string | null; prompt?: string | null };
+      const row = (payload.new || payload.old) as { slot?: string; photo_url?: string | null; prompt?: string | null; frames?: ActionFrames | null };
       const key = row.slot as PortraitKey;
       if (!key || !PORTRAIT_SLOTS.some((s) => s.key === key)) return;
       writeLocal(
         key,
-        payload.eventType === 'DELETE' ? { url: null, prompt: null } : { url: row.photo_url ?? null, prompt: row.prompt ?? null }
+        payload.eventType === 'DELETE'
+          ? { url: null, prompt: null, frames: null }
+          : { url: row.photo_url ?? null, prompt: row.prompt ?? null, frames: row.frames ?? null }
       );
       notify();
     })
@@ -139,8 +157,7 @@ export function initPortraitSync(): void {
 }
 
 /** Builds a Pollinations.ai (free, no API key) image URL for the given prompt. */
-function buildGenerationUrl(prompt: string, width: number, height: number): string {
-  const seed = Math.floor(Math.random() * 1_000_000);
+function buildGenerationUrl(prompt: string, width: number, height: number, seed: number): string {
   const encoded = encodeURIComponent(prompt.trim());
   return `https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&nologo=true&seed=${seed}`;
 }
@@ -200,6 +217,42 @@ async function removeGreenScreen(imageUrl: string): Promise<Blob | null> {
 }
 
 /**
+ * Generates one image via Pollinations, optionally keys out its green-screen background,
+ * uploads the result to Supabase Storage, and returns the final public URL.
+ */
+async function generateOneFrame(
+  prompt: string,
+  width: number,
+  height: number,
+  seed: number,
+  shouldRemoveBg: boolean,
+  pathPrefix: string
+): Promise<string> {
+  const rawUrl = buildGenerationUrl(prompt, width, height, seed);
+
+  await new Promise<void>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error('Image generation failed — try again or simplify the description.'));
+    img.src = rawUrl;
+  });
+
+  if (!shouldRemoveBg) return rawUrl;
+
+  const cutoutBlob = await removeGreenScreen(rawUrl);
+  if (!cutoutBlob) return rawUrl;
+
+  const path = `${pathPrefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}.png`;
+  const { error: uploadError } = await supabase.storage
+    .from(CHARACTER_PHOTOS_BUCKET)
+    .upload(path, cutoutBlob, { contentType: 'image/png', upsert: true, cacheControl: '3600' });
+  if (uploadError) return rawUrl;
+
+  const { data } = supabase.storage.from(CHARACTER_PHOTOS_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+/**
  * Generates a new image for the given slot from a text prompt via Pollinations.ai, keys
  * out the green-screen background (for character/enemy slots), uploads the result to
  * Supabase Storage, and saves the URL + prompt to Supabase so it syncs to every player.
@@ -211,32 +264,10 @@ export async function generatePortrait(
 ): Promise<string> {
   const width = opts?.width ?? 512;
   const height = opts?.height ?? 768;
-  const rawUrl = buildGenerationUrl(prompt, width, height);
   const shouldRemoveBg = PORTRAIT_SLOTS.find((s) => s.key === key)?.removeBackground ?? false;
+  const seed = Math.floor(Math.random() * 1_000_000);
 
-  // Make sure the raw image actually finishes generating/loading first.
-  await new Promise<void>((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve();
-    img.onerror = () => reject(new Error('Image generation failed — try again or simplify the description.'));
-    img.src = rawUrl;
-  });
-
-  let finalUrl = rawUrl;
-
-  if (shouldRemoveBg) {
-    const cutoutBlob = await removeGreenScreen(rawUrl);
-    if (cutoutBlob) {
-      const path = `${key}-${Date.now()}.png`;
-      const { error: uploadError } = await supabase.storage
-        .from(CHARACTER_PHOTOS_BUCKET)
-        .upload(path, cutoutBlob, { contentType: 'image/png', upsert: true, cacheControl: '3600' });
-      if (!uploadError) {
-        const { data } = supabase.storage.from(CHARACTER_PHOTOS_BUCKET).getPublicUrl(path);
-        finalUrl = data.publicUrl;
-      }
-    }
-  }
+  const finalUrl = await generateOneFrame(prompt, width, height, seed, shouldRemoveBg, key);
 
   const label = PORTRAIT_SLOTS.find((s) => s.key === key)?.label ?? key;
   const { error } = await supabase.from('characters').upsert({
@@ -248,16 +279,61 @@ export async function generatePortrait(
   });
   if (error) throw error;
 
-  writeLocal(key, { url: finalUrl, prompt });
+  writeLocal(key, { url: finalUrl, prompt, frames: cache[key]?.frames ?? null });
   notify();
   return finalUrl;
+}
+
+/**
+ * Generates a full 2-frame-per-action animation set (idle/walk/attack/jump = 8 images
+ * total) for a character slot, using ONE fixed seed across all of them so the character's
+ * identity/style stays as consistent as Pollinations' free model allows, with only the
+ * pose description changing per frame. Reports progress via onProgress(done, total).
+ */
+export async function generateCharacterFrames(
+  key: PortraitKey,
+  basePrompt: string,
+  onProgress?: (done: number, total: number) => void
+): Promise<ActionFrames> {
+  const shouldRemoveBg = PORTRAIT_SLOTS.find((s) => s.key === key)?.removeBackground ?? true;
+  const seed = Math.floor(Math.random() * 1_000_000);
+  const actions: SpriteAction[] = ['idle', 'walk', 'attack', 'jump'];
+  const total = actions.length * 2;
+  let done = 0;
+
+  const frames = {} as ActionFrames;
+  for (const action of actions) {
+    const [poseA, poseB] = POSE_SUFFIX[action];
+    const urlA = await generateOneFrame(`${basePrompt}, ${poseA}`, 512, 768, seed, shouldRemoveBg, `${key}-${action}-a`);
+    done++;
+    onProgress?.(done, total);
+    const urlB = await generateOneFrame(`${basePrompt}, ${poseB}`, 512, 768, seed, shouldRemoveBg, `${key}-${action}-b`);
+    done++;
+    onProgress?.(done, total);
+    frames[action] = [urlA, urlB];
+  }
+
+  const label = PORTRAIT_SLOTS.find((s) => s.key === key)?.label ?? key;
+  const { error } = await supabase.from('characters').upsert({
+    slot: key,
+    name: label,
+    photo_url: frames.idle[0],
+    prompt: basePrompt,
+    frames,
+    updated_at: new Date().toISOString(),
+  });
+  if (error) throw error;
+
+  writeLocal(key, { url: frames.idle[0], prompt: basePrompt, frames });
+  notify();
+  return frames;
 }
 
 export async function resetPortrait(key: PortraitKey): Promise<void> {
   const { error } = await supabase
     .from('characters')
-    .upsert({ slot: key, photo_url: null, prompt: null, updated_at: new Date().toISOString() });
+    .upsert({ slot: key, photo_url: null, prompt: null, frames: null, updated_at: new Date().toISOString() });
   if (error) throw error;
-  writeLocal(key, { url: null, prompt: null });
+  writeLocal(key, { url: null, prompt: null, frames: null });
   notify();
 }

@@ -348,6 +348,7 @@ export default function App() {
             onToggleMute={() => setIsMuted(soundManager.toggleMute())}
             onPause={() => setIsPaused(true)}
             onAttack={() => engineRef.current?.triggerAttack()}
+            onJump={() => engineRef.current?.triggerJump()}
             onShieldStart={() => engineRef.current?.setShield(true)}
             onShieldEnd={() => engineRef.current?.setShield(false)}
             onDash={() => engineRef.current?.triggerAbility('auraDash')}

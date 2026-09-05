@@ -55,6 +55,13 @@ export class GameEngine {
   private dashTimer: number = 0;
   private dashDirection: THREE.Vector3 = new THREE.Vector3();
 
+  // Jump
+  private isJumping: boolean = false;
+  private jumpVelocity: number = 0;
+  private readonly JUMP_FORCE = 5.4;
+  private readonly GRAVITY = -16;
+  private readonly GROUND_Y = 0;
+
   // Attack Combos
   private comboStep: number = 0;
   private comboTimer: number = 0;
@@ -368,6 +375,10 @@ export class GameEngine {
         e.preventDefault();
         this.triggerAbility('auraDash');
       }
+      if (code === 'KeyF') {
+        e.preventDefault();
+        this.triggerJump();
+      }
     });
 
     window.addEventListener('keyup', (e) => {
@@ -449,6 +460,24 @@ export class GameEngine {
 
     // Check hit immediately along forward arc
     setTimeout(() => this.performMeleeHitCheck(), 120);
+  }
+
+  public triggerJump() {
+    if (this.isJumping || this.isAttacking || this.isBlocking || this.isDashing) return;
+    this.isJumping = true;
+    this.jumpVelocity = this.JUMP_FORCE;
+    soundManager.playDash(); // reuse an existing whoosh-style sfx for the jump takeoff
+  }
+
+  private updateJumpPhysics(dt: number) {
+    if (!this.isJumping) return;
+    this.jumpVelocity += this.GRAVITY * dt;
+    this.heroRig.root.position.y += this.jumpVelocity * dt;
+    if (this.heroRig.root.position.y <= this.GROUND_Y) {
+      this.heroRig.root.position.y = this.GROUND_Y;
+      this.isJumping = false;
+      this.jumpVelocity = 0;
+    }
   }
 
   public setShield(blocking: boolean) {
@@ -817,6 +846,7 @@ export class GameEngine {
 
     // Hero Movement
     this.updateHeroMovement(dt);
+    this.updateJumpPhysics(dt);
 
     // World animation (flying cyber traffic, particles)
     if (this.world) {
@@ -886,6 +916,27 @@ export class GameEngine {
       this.heroRig.root.rotation.y = targetAngle;
     } else {
       this.isSprinting = false;
+    }
+  }
+
+  private updateSpriteFrame(rig: CharacterRig, action: 'idle' | 'walk' | 'attack' | 'jump', dt: number) {
+    if (!rig.spriteFrameTextures || !rig.spriteMaterial) return;
+    if (action !== rig.spriteCurrentAction) {
+      rig.spriteCurrentAction = action;
+      rig.spriteFrameIndex = 0;
+      rig.spriteFrameTimer = 0;
+    }
+    const frameDuration = action === 'attack' ? 0.12 : action === 'walk' ? 0.16 : action === 'jump' ? 0.2 : 0.5;
+    rig.spriteFrameTimer = (rig.spriteFrameTimer ?? 0) + dt;
+    if (rig.spriteFrameTimer >= frameDuration) {
+      rig.spriteFrameTimer = 0;
+      rig.spriteFrameIndex = ((rig.spriteFrameIndex ?? 0) + 1) % 2;
+    }
+    const frames = rig.spriteFrameTextures[action];
+    const frame = frames?.[rig.spriteFrameIndex ?? 0];
+    if (frame && rig.spriteMaterial.map !== frame) {
+      rig.spriteMaterial.map = frame;
+      rig.spriteMaterial.needsUpdate = true;
     }
   }
 
@@ -997,6 +1048,20 @@ export class GameEngine {
       // effect (a THREE.Sprite always faces the camera) — use the material's own 2D roll
       // instead to get an equivalent lean/tilt/spin feel.
       const spriteMat = this.heroRig.isSprite ? this.heroRig.spriteMaterial : undefined;
+
+      // --- Real flipbook frame animation (idle/walk/attack/jump), when a full frame set
+      // was generated for this character — swaps the sprite's texture instead of (or in
+      // addition to) the whole-body position/roll tricks below, for actual 2D animation.
+      if (this.heroRig.spriteFrameTextures) {
+        const action: 'idle' | 'walk' | 'attack' | 'jump' = this.isJumping
+          ? 'jump'
+          : this.isAttacking
+          ? 'attack'
+          : isMoving
+          ? 'walk'
+          : 'idle';
+        this.updateSpriteFrame(this.heroRig, action, dt);
+      }
 
       if (this.playerStats.hp <= 0) {
         // Death: topple forward and settle to the ground
@@ -1140,6 +1205,7 @@ export class GameEngine {
           const basePos = enemy.rig.meshBasePosition;
           mesh.position.y = basePos.y + Math.abs(Math.sin(enemy.rig.animTime)) * 0.06;
         }
+        this.updateSpriteFrame(enemy.rig, 'walk', dt);
       } else {
         // In Attack Range
         enemy.attackCooldown -= dt;
@@ -1164,6 +1230,7 @@ export class GameEngine {
             mesh.position.z = THREE.MathUtils.lerp(mesh.position.z, basePos.z, dt * 6);
           }
         }
+        this.updateSpriteFrame(enemy.rig, enemy.rig.attackPulseTime && enemy.rig.attackPulseTime > 0 ? 'attack' : 'idle', dt);
       }
     }
   }

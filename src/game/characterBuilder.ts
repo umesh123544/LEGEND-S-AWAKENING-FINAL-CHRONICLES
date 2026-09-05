@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { assetManager } from './AssetManager';
-import { getPortrait, PortraitKey } from './portraits';
+import { getPortrait, getFrames, PortraitKey } from './portraits';
 
 export interface CharacterRig {
   root: THREE.Group;
@@ -37,6 +37,14 @@ export interface CharacterRig {
    *  a billboard's own X/Y axes has no visual effect (it always faces the camera). */
   isSprite?: boolean;
   spriteMaterial?: THREE.SpriteMaterial;
+  /** Preloaded THREE.Texture frames per action, when the admin generated a full animation
+   *  set (see generateCharacterFrames in portraits.ts). GameEngine swaps spriteMaterial.map
+   *  between these based on current state (idle/walk/attack/jump) for real 2D flipbook
+   *  animation instead of just whole-body position/roll tricks. */
+  spriteFrameTextures?: Record<'idle' | 'walk' | 'attack' | 'jump', THREE.Texture[]>;
+  spriteCurrentAction?: 'idle' | 'walk' | 'attack' | 'jump';
+  spriteFrameIndex?: number;
+  spriteFrameTimer?: number;
   /** Countdown timer (seconds) driving a brief forward lunge pulse on enemy attack for
    *  sprite-based enemies (see updateEnemies in GameEngine.ts). */
   attackPulseTime?: number;
@@ -1103,6 +1111,7 @@ function buildSculptedEnemySilhouette(type: string): {
 function mountBillboardSprite(
   rig: CharacterRig,
   silhouetteBody: THREE.Group,
+  portraitKey: PortraitKey,
   imageUrl: string,
   targetHeight: number
 ): void {
@@ -1134,6 +1143,30 @@ function mountBillboardSprite(
       rig.isSprite = true;
       rig.spriteMaterial = material;
       rig.isAssetLoaded = true;
+
+      // If a full idle/walk/attack/jump animation set was generated, preload every frame
+      // as a texture so GameEngine can flip between them for real 2D sprite animation.
+      const frameUrls = getFrames(portraitKey);
+      if (frameUrls) {
+        const frameLoader = new THREE.TextureLoader();
+        const loaded: Record<'idle' | 'walk' | 'attack' | 'jump', THREE.Texture[]> = {
+          idle: [],
+          walk: [],
+          attack: [],
+          jump: [],
+        };
+        (Object.keys(frameUrls) as (keyof typeof frameUrls)[]).forEach((action) => {
+          loaded[action] = frameUrls[action].map((url) => {
+            const tex = frameLoader.load(url);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            return tex;
+          });
+        });
+        rig.spriteFrameTextures = loaded;
+        rig.spriteCurrentAction = 'idle';
+        rig.spriteFrameIndex = 0;
+        rig.spriteFrameTimer = 0;
+      }
     },
     undefined,
     (err) => {
@@ -1186,7 +1219,7 @@ export function createHeroCharacter(): CharacterRig {
   // 3D GLB model — the sprite already depicts whatever it's holding.
   const heroSpriteUrl = getPortrait('hero');
   if (heroSpriteUrl) {
-    mountBillboardSprite(rig, silhouette.body, heroSpriteUrl, 1.9);
+    mountBillboardSprite(rig, silhouette.body, 'hero', heroSpriteUrl, 1.9);
     return rig;
   }
 
@@ -1315,7 +1348,7 @@ export function createDreadLordCharacter(): CharacterRig {
   // If the admin has generated a 2D sprite for the Villain, use that instead of the GLB.
   const villainSpriteUrl = getPortrait('villain');
   if (villainSpriteUrl) {
-    mountBillboardSprite(rig, silhouette.body, villainSpriteUrl, 2.3);
+    mountBillboardSprite(rig, silhouette.body, 'villain', villainSpriteUrl, 2.3);
     return rig;
   }
 
@@ -1409,7 +1442,7 @@ export function createEnemyMesh(type: string): CharacterRig {
   const enemySpriteUrl = getPortrait(`enemy_${type}` as PortraitKey);
   if (enemySpriteUrl) {
     const height = type === 'mini_boss' ? 2.4 : type === 'demon_beast' ? 2.1 : 1.9;
-    mountBillboardSprite(rig, silhouette.body, enemySpriteUrl, height);
+    mountBillboardSprite(rig, silhouette.body, `enemy_${type}` as PortraitKey, enemySpriteUrl, height);
     return rig;
   }
 

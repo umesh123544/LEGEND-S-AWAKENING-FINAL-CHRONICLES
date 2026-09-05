@@ -5,7 +5,9 @@ import {
   PortraitKey,
   getPortrait,
   getPortraitPrompt,
+  getFrames,
   generatePortrait,
+  generateCharacterFrames,
   resetPortrait,
 } from '../game/portraits';
 
@@ -93,10 +95,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
         </div>
 
         <p className="text-xs sm:text-sm text-cyan-300/90 glass-panel border-cyan-400/30 rounded-xl px-4 py-3 mb-6 leading-relaxed">
-          Describe a character or scene in a few words and tap <span className="font-bold">Generate</span> — a free
-          AI image service creates it and it syncs live to <span className="font-bold">every player, on every
-          device</span> (via Supabase). No photo upload, no cost. Hero/Villain/Enemies render as 2D sprites in the
-          3D battle world; the Background replaces the arena backdrop.
+          Describe a character or scene and tap <span className="font-bold">Generate</span> — a free AI image
+          service creates it and it syncs live to <span className="font-bold">every player, on every device</span>{' '}
+          (via Supabase). No photo upload, no cost. For Hero/Villain/Enemies, this generates a full{' '}
+          <span className="font-bold">idle · walk · attack · jump</span> animation set (8 images) so they move like
+          a real game character, not a static photo — this takes ~30–60 seconds per character.
         </p>
 
         <div className="flex flex-col gap-4">
@@ -108,6 +111,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
               hint={slot.hint}
               defaultPrompt={slot.defaultPrompt}
               wide={slot.key === 'background'}
+              animated={slot.removeBackground}
             />
           ))}
         </div>
@@ -122,11 +126,14 @@ const PortraitSlotEditor: React.FC<{
   hint: string;
   defaultPrompt: string;
   wide: boolean;
-}> = ({ slotKey, label, hint, defaultPrompt, wide }) => {
+  animated: boolean;
+}> = ({ slotKey, label, hint, defaultPrompt, wide, animated }) => {
   const [preview, setPreview] = useState<string | null>(() => getPortrait(slotKey));
   const [prompt, setPrompt] = useState<string>(() => getPortraitPrompt(slotKey) || defaultPrompt);
   const [error, setError] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const hasFrames = !!getFrames(slotKey);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -135,14 +142,21 @@ const PortraitSlotEditor: React.FC<{
     }
     setError('');
     setIsGenerating(true);
+    setProgress(animated ? { done: 0, total: 8 } : null);
     try {
-      const url = await generatePortrait(slotKey, prompt, wide ? { width: 1024, height: 576 } : undefined);
-      setPreview(url);
+      if (animated) {
+        const frames = await generateCharacterFrames(slotKey, prompt, (done, total) => setProgress({ done, total }));
+        setPreview(frames.idle[0]);
+      } else {
+        const url = await generatePortrait(slotKey, prompt, wide ? { width: 1024, height: 576 } : undefined);
+        setPreview(url);
+      }
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : 'Generation failed — try again.');
     } finally {
       setIsGenerating(false);
+      setProgress(null);
     }
   };
 
@@ -172,7 +186,14 @@ const PortraitSlotEditor: React.FC<{
       </div>
 
       <div className="flex-1 min-w-0">
-        <div className="font-bold text-sm text-slate-100">{label}</div>
+        <div className="flex items-center gap-2">
+          <div className="font-bold text-sm text-slate-100">{label}</div>
+          {animated && (
+            <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-cyan-400/15 text-cyan-300 border border-cyan-400/30">
+              {hasFrames ? 'Animated' : 'Animated on generate'}
+            </span>
+          )}
+        </div>
         <div className="text-[11px] text-slate-400 mt-0.5 leading-snug">{hint}</div>
 
         <textarea
@@ -184,6 +205,11 @@ const PortraitSlotEditor: React.FC<{
         />
 
         {error && <div className="text-[11px] text-red-400 mt-1">{error}</div>}
+        {progress && (
+          <div className="text-[11px] text-cyan-300 mt-1">
+            Generating frame {progress.done}/{progress.total}…
+          </div>
+        )}
 
         <div className="flex gap-2 mt-2.5">
           <button

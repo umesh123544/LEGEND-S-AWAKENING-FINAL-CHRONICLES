@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Zap, Flame, Sparkles, Volume2, VolumeX, Pause, Crosshair, Sword } from 'lucide-react';
+import { Shield, Zap, Flame, Sparkles, Volume2, VolumeX, Pause, Crosshair, Sword, ArrowUp } from 'lucide-react';
 import { DamageNumber, EnemyState, PlayerStats } from '../types';
 import { getPortrait, usePortraitsVersion } from '../game/portraits';
 
@@ -13,6 +13,7 @@ interface HUDProps {
   onToggleMute: () => void;
   onPause: () => void;
   onAttack: () => void;
+  onJump: () => void;
   onShieldStart: () => void;
   onShieldEnd: () => void;
   onDash: () => void;
@@ -37,6 +38,7 @@ export const HUD: React.FC<HUDProps> = ({
   onToggleMute,
   onPause,
   onAttack,
+  onJump,
   onShieldStart,
   onShieldEnd,
   onDash,
@@ -257,8 +259,21 @@ export const HUD: React.FC<HUDProps> = ({
           id="action-buttons-bar"
           className="flex flex-col sm:flex-row items-end gap-1.5 sm:gap-3 ml-auto pointer-events-auto"
         >
-          {/* Row 1 on Mobile: Secondary Skills (Dash, Q, E) */}
+          {/* Row 1 on Mobile: Secondary Skills (Dash, Jump, Q, E) */}
           <div className="flex items-center gap-1.5 sm:gap-2.5">
+            {/* Jump (F) */}
+            <button
+              id="btn-action-jump"
+              onClick={onJump}
+              className="w-10 h-10 sm:w-12 sm:h-12 glass-panel rounded-full flex flex-col items-center justify-center border-white/10 hover:border-cyan-400/50 active:scale-95 transition-all text-cyan-300"
+              title="Jump [F]"
+            >
+              <div className="hidden sm:block text-[8px] font-bold text-white/50 mb-0.5 font-mono">F</div>
+              <div className="w-4 h-4 sm:w-5 sm:h-5 bg-cyan-400/10 rounded flex items-center justify-center border border-cyan-400/40">
+                <ArrowUp className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-400" />
+              </div>
+            </button>
+
             {/* Dash (Space) */}
             <button
               id="btn-action-dash"
