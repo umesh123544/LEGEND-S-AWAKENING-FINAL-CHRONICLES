@@ -1173,6 +1173,12 @@ export function createHeroCharacter(): CharacterRig {
         shieldGroup.rotation.set(0, Math.PI / 4, 0);
         leftHandAnchor.add(shieldGroup);
 
+        // The custom hero model already sculpts its own weapon held in-hand, so hide the
+        // game's separate glowing energy-sword overlay to avoid showing two weapons at once.
+        // The holographic shield is kept since it's a distinct ability effect (block), not
+        // a static hand prop.
+        weaponGroup.visible = false;
+
         // Existing GameEngine walk/attack code animates rig.leftArm / rig.rightArm rotation —
         // point those at the new visible hand anchors instead of the hidden silhouette arms.
         rig.rightArm = rightHandAnchor;
