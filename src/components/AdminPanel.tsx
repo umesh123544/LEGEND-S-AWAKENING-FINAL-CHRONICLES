@@ -54,17 +54,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
   const handleGenerateAll = async () => {
     setIsBulkGenerating(true);
     setBulkError('');
+    setBulkStatus('Starting…');
     const failures: string[] = [];
+    const total = PORTRAIT_SLOTS.length;
+    let slotIndex = 0;
     try {
       for (const slot of PORTRAIT_SLOTS) {
+        slotIndex++;
         try {
           if (slot.inputMode === 'actions') {
-            setBulkStatus(`${slot.label}: starting…`);
-            await generateCharacterFrames(slot.key, slot.defaultPrompt, (done, total) =>
-              setBulkStatus(`${slot.label}: ${done}/${total} images…`)
+            setBulkStatus(`(${slotIndex}/${total}) ${slot.label}: starting…`);
+            await generateCharacterFrames(slot.key, slot.defaultPrompt, (done, imgTotal) =>
+              setBulkStatus(`(${slotIndex}/${total}) ${slot.label}: ${done}/${imgTotal} images…`)
             );
           } else if (slot.inputMode === 'upload') {
-            setBulkStatus(`${slot.label}: generating…`);
+            setBulkStatus(`(${slotIndex}/${total}) ${slot.label}: generating…`);
             await generatePortrait(slot.key, slot.defaultPrompt, { width: 1024, height: 576 });
           }
           // 'prompt' slots (A.U.R.A., NPC) are left as-is — not essential to gameplay.

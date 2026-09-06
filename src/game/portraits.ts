@@ -285,8 +285,8 @@ async function generateOneFrame(
   await new Promise<void>((resolve, reject) => {
     const img = new Image();
     const timeout = setTimeout(() => {
-      reject(new Error('Image generation timed out (Pollinations took too long) — try again.'));
-    }, 45000);
+      reject(new Error('Image generation timed out after 20s — Pollinations may be slow or unreachable from your network right now.'));
+    }, 20000);
     img.onload = () => {
       clearTimeout(timeout);
       resolve();
