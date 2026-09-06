@@ -54,22 +54,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
   const handleGenerateAll = async () => {
     setIsBulkGenerating(true);
     setBulkError('');
+    const failures: string[] = [];
     try {
       for (const slot of PORTRAIT_SLOTS) {
-        if (slot.inputMode === 'actions') {
-          setBulkStatus(`Generating ${slot.label}…`);
-          await generateCharacterFrames(slot.key, slot.defaultPrompt);
-        } else if (slot.inputMode === 'upload') {
-          setBulkStatus(`Generating ${slot.label}…`);
-          await generatePortrait(slot.key, slot.defaultPrompt, { width: 1024, height: 576 });
+        try {
+          if (slot.inputMode === 'actions') {
+            setBulkStatus(`${slot.label}: starting…`);
+            await generateCharacterFrames(slot.key, slot.defaultPrompt, (done, total) =>
+              setBulkStatus(`${slot.label}: ${done}/${total} images…`)
+            );
+          } else if (slot.inputMode === 'upload') {
+            setBulkStatus(`${slot.label}: generating…`);
+            await generatePortrait(slot.key, slot.defaultPrompt, { width: 1024, height: 576 });
+          }
+          // 'prompt' slots (A.U.R.A., NPC) are left as-is — not essential to gameplay.
+        } catch (err) {
+          console.error(`Bulk generation failed for ${slot.label}:`, err);
+          failures.push(slot.label);
         }
-        // 'prompt' slots (A.U.R.A., NPC) are left as-is — not essential to gameplay.
       }
       setBulkStatus('Done!');
       setRefreshKey((k) => k + 1);
-    } catch (err) {
-      console.error(err);
-      setBulkError(err instanceof Error ? err.message : 'Bulk generation failed partway — you can retry, already-generated characters are saved.');
+      if (failures.length > 0) {
+        setBulkError(`Failed (you can retry these individually below): ${failures.join(', ')}`);
+      }
     } finally {
       setIsBulkGenerating(false);
       setTimeout(() => setBulkStatus(''), 3000);

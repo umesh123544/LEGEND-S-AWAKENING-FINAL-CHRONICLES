@@ -269,7 +269,8 @@ async function removeUniformBackground(imageUrl: string): Promise<Blob | null> {
 
 /**
  * Generates one image via Pollinations, optionally keys out its green-screen background,
- * uploads the result to Supabase Storage, and returns the final public URL.
+ * uploads the result to Supabase Storage, and returns the final public URL. Has a hard
+ * timeout so a slow/stuck Pollinations response can't hang the whole admin flow forever.
  */
 async function generateOneFrame(
   prompt: string,
@@ -283,8 +284,17 @@ async function generateOneFrame(
 
   await new Promise<void>((resolve, reject) => {
     const img = new Image();
-    img.onload = () => resolve();
-    img.onerror = () => reject(new Error('Image generation failed — try again or simplify the description.'));
+    const timeout = setTimeout(() => {
+      reject(new Error('Image generation timed out (Pollinations took too long) — try again.'));
+    }, 45000);
+    img.onload = () => {
+      clearTimeout(timeout);
+      resolve();
+    };
+    img.onerror = () => {
+      clearTimeout(timeout);
+      reject(new Error('Image generation failed — try again or simplify the description.'));
+    };
     img.src = rawUrl;
   });
 
@@ -339,7 +349,9 @@ export async function generatePortrait(
  * Generates a full 2-frame-per-action animation set (idle/walk/attack/jump = 8 images
  * total) for a character slot, using ONE fixed seed across all of them so the character's
  * identity/style stays as consistent as Pollinations' free model allows, with only the
- * pose description changing per frame. Reports progress via onProgress(done, total).
+ * pose description changing per frame. All 8 generate in parallel (much faster than one
+ * at a time) and report progress via onProgress(done, total) as each finishes. If some
+ * frames fail (e.g. a timeout), the ones that succeeded are still saved.
  */
 export async function generateCharacterFrames(
   key: PortraitKey,
@@ -351,17 +363,42 @@ export async function generateCharacterFrames(
   const actions: SpriteAction[] = ['idle', 'walk', 'attack', 'jump'];
   const total = actions.length * 2;
   let done = 0;
+  const bump = () => onProgress?.(++done, total);
 
-  const frames = {} as ActionFrames;
-  for (const action of actions) {
+  const jobs = actions.map((action) => {
     const [poseA, poseB] = POSE_SUFFIX[action];
-    const urlA = await generateOneFrame(`${basePrompt}, ${poseA}`, 512, 768, seed, shouldRemoveBg, `${key}-${action}-a`);
-    done++;
-    onProgress?.(done, total);
-    const urlB = await generateOneFrame(`${basePrompt}, ${poseB}`, 512, 768, seed, shouldRemoveBg, `${key}-${action}-b`);
-    done++;
-    onProgress?.(done, total);
-    frames[action] = [urlA, urlB];
+    return Promise.all([
+      generateOneFrame(`${basePrompt}, ${poseA}`, 512, 768, seed, shouldRemoveBg, `${key}-${action}-a`)
+        .then((url) => {
+          bump();
+          return url;
+        })
+        .catch((err) => {
+          bump();
+          console.warn(`Frame failed (${key}/${action} A):`, err);
+          return null;
+        }),
+      generateOneFrame(`${basePrompt}, ${poseB}`, 512, 768, seed, shouldRemoveBg, `${key}-${action}-b`)
+        .then((url) => {
+          bump();
+          return url;
+        })
+        .catch((err) => {
+          bump();
+          console.warn(`Frame failed (${key}/${action} B):`, err);
+          return null;
+        }),
+    ]).then(([a, b]) => ({ action, urls: [a, b].filter((u): u is string => !!u) }));
+  });
+
+  const results = await Promise.all(jobs);
+  const frames = {} as ActionFrames;
+  for (const { action, urls } of results) {
+    frames[action] = urls;
+  }
+
+  if (!frames.idle?.length) {
+    throw new Error('All frame generations failed — check your connection and try again.');
   }
 
   const label = PORTRAIT_SLOTS.find((s) => s.key === key)?.label ?? key;
