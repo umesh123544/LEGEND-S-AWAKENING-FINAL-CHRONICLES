@@ -892,6 +892,14 @@ export class GameEngine {
       const normX = moveX / Math.max(1, inputLen);
       const normZ = moveZ / Math.max(1, inputLen);
 
+      // Flip the 2D sprite to face left/right based on screen-space input, so a billboard
+      // character at least mirrors correctly when strafing (it can't show a true back/side
+      // view like a real 3D model, but this avoids it looking permanently "glued" facing
+      // one way regardless of movement).
+      if (this.heroRig.isSprite && Math.abs(moveX) > 0.15) {
+        this.heroRig.spriteFacingDir = moveX < 0 ? -1 : 1;
+      }
+
       // Relative to camera yaw
       const camYaw = this.cameraYaw;
       const worldDirX = normX * Math.cos(camYaw) + normZ * Math.sin(camYaw);
@@ -947,7 +955,8 @@ export class GameEngine {
         const img = frame.image as { width?: number; height?: number } | undefined;
         if (img?.width && img?.height) {
           const aspect = img.width / img.height;
-          rig.sprite.scale.set(rig.spriteTargetHeight * aspect, rig.spriteTargetHeight, 1);
+          const facing = rig.spriteFacingDir ?? 1;
+          rig.sprite.scale.set(rig.spriteTargetHeight * aspect * facing, rig.spriteTargetHeight, 1);
         }
       }
     }
@@ -1074,6 +1083,16 @@ export class GameEngine {
           ? 'walk'
           : 'idle';
         this.updateSpriteFrame(this.heroRig, action, dt);
+      }
+
+      // Keep the sprite's horizontal flip in sync with facing direction even when the
+      // texture frame itself hasn't changed this tick (e.g. holding still after turning).
+      if (this.heroRig.isSprite && this.heroRig.sprite) {
+        const desiredSign = this.heroRig.spriteFacingDir ?? 1;
+        const currentSign = this.heroRig.sprite.scale.x < 0 ? -1 : 1;
+        if (currentSign !== desiredSign) {
+          this.heroRig.sprite.scale.x = -this.heroRig.sprite.scale.x;
+        }
       }
 
       if (this.playerStats.hp <= 0) {

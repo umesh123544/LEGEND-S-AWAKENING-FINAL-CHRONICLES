@@ -51,6 +51,9 @@ export interface CharacterRig {
    *  aspect ratios (e.g. idle vs. a wider attack sprite-sheet frame). */
   sprite?: THREE.Sprite;
   spriteTargetHeight?: number;
+  /** 1 = default facing, -1 = mirrored (left). Set by GameEngine from movement input so a
+   *  billboard sprite at least flips to roughly match strafing direction. */
+  spriteFacingDir?: 1 | -1;
   /** Countdown timer (seconds) driving a brief forward lunge pulse on enemy attack for
    *  sprite-based enemies (see updateEnemies in GameEngine.ts). */
   attackPulseTime?: number;
