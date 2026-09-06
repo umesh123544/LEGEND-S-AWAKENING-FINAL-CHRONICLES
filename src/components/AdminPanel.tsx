@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Sparkles, X, ArrowLeft, ShieldCheck, Upload, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { Lock, Sparkles, X, ArrowLeft, ShieldCheck, Upload, ExternalLink, CheckCircle2, Wand2 } from 'lucide-react';
 import {
   PORTRAIT_SLOTS,
   PortraitKey,
@@ -8,6 +8,7 @@ import {
   getPortraitPrompt,
   getFrames,
   generatePortrait,
+  generateCharacterFrames,
   uploadActionFrame,
   uploadSinglePortrait,
   resetPortrait,
@@ -34,6 +35,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
   const [authed, setAuthed] = useState<boolean>(() => sessionStorage.getItem(AUTH_SESSION_KEY) === '1');
   const [passwordInput, setPasswordInput] = useState('');
   const [authError, setAuthError] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [isBulkGenerating, setIsBulkGenerating] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState('');
+  const [bulkError, setBulkError] = useState('');
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +48,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
       setAuthError('');
     } else {
       setAuthError('Incorrect password.');
+    }
+  };
+
+  const handleGenerateAll = async () => {
+    setIsBulkGenerating(true);
+    setBulkError('');
+    try {
+      for (const slot of PORTRAIT_SLOTS) {
+        if (slot.inputMode === 'actions') {
+          setBulkStatus(`Generating ${slot.label}…`);
+          await generateCharacterFrames(slot.key, slot.defaultPrompt);
+        } else if (slot.inputMode === 'upload') {
+          setBulkStatus(`Generating ${slot.label}…`);
+          await generatePortrait(slot.key, slot.defaultPrompt, { width: 1024, height: 576 });
+        }
+        // 'prompt' slots (A.U.R.A., NPC) are left as-is — not essential to gameplay.
+      }
+      setBulkStatus('Done!');
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      console.error(err);
+      setBulkError(err instanceof Error ? err.message : 'Bulk generation failed partway — you can retry, already-generated characters are saved.');
+    } finally {
+      setIsBulkGenerating(false);
+      setTimeout(() => setBulkStatus(''), 3000);
     }
   };
 
@@ -107,21 +137,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
           href="https://pixler.dev/get-started"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-between gap-2 text-xs sm:text-sm text-cyan-300/90 glass-panel border-cyan-400/30 rounded-xl px-4 py-3 mb-6 leading-relaxed hover:border-cyan-400/60 transition-colors"
+          className="flex items-center justify-between gap-2 text-xs sm:text-sm text-cyan-300/90 glass-panel border-cyan-400/30 rounded-xl px-4 py-3 mb-4 leading-relaxed hover:border-cyan-400/60 transition-colors"
         >
           <span>
-            Open <span className="font-bold">pixler.dev</span> (free, no signup) to generate characters and
-            backgrounds, then upload the images below. If pixler gives you a{' '}
-            <span className="font-bold">multi-frame sprite sheet</span> (several poses side by side in one image),
-            set the frame count so it gets sliced correctly — otherwise leave it at 1.
+            Prefer hand-picked art? Open <span className="font-bold">pixler.dev</span> (free, no signup) and upload
+            the images below instead.
           </span>
           <ExternalLink className="w-4 h-4 shrink-0" />
         </a>
 
+        <button
+          onClick={handleGenerateAll}
+          disabled={isBulkGenerating}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 text-sm font-black uppercase tracking-wider hover:brightness-110 disabled:opacity-50 mb-2 shadow-lg"
+        >
+          <Wand2 className="w-4 h-4" />
+          {isBulkGenerating ? bulkStatus || 'Generating…' : 'Generate All Characters + Background (AI)'}
+        </button>
+        <p className="text-[11px] text-slate-500 mb-6 text-center">
+          Free, automatic — fills in every Hero/Villain/Enemy animation set and the Background using AI, based on
+          this game's theme. Takes a few minutes. You can still edit or replace anything individually below.
+        </p>
+        {bulkError && <p className="text-[11px] text-red-400 mb-4 text-center">{bulkError}</p>}
+
         <div className="flex flex-col gap-4">
           {PORTRAIT_SLOTS.map((slot) => (
             <PortraitSlotEditor
-              key={slot.key}
+              key={`${slot.key}-${refreshKey}`}
               slotKey={slot.key}
               label={slot.label}
               hint={slot.hint}
