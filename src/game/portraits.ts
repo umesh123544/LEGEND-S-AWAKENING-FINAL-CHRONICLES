@@ -26,18 +26,18 @@ export type PortraitKey =
   | 'enemy_mini_boss'
   | 'background';
 
-export const PORTRAIT_SLOTS: { key: PortraitKey; label: string; hint: string; defaultPrompt: string; removeBackground: boolean }[] = [
-  { key: 'hero', label: 'Hero (Aura Vanguard)', hint: 'The player character — used in the 3D battle world, HUD, menu and dialogue.', defaultPrompt: 'chibi style armored warrior hero, blue and gold energy armor, holding a glowing axe, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true },
-  { key: 'villain', label: 'Villain (The Dread Lord)', hint: 'The final boss — used in the 3D battle world, menu and dialogue.', defaultPrompt: 'dark armored villain, glowing red eyes, spiked black and crimson armor, full body, menacing, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true },
-  { key: 'enemy_dark_soldier', label: 'Enemy: Dark Soldier', hint: 'Common enemy type in the 3D battle world.', defaultPrompt: 'dark soldier grunt enemy, black armor, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true },
-  { key: 'enemy_shadow_archer', label: 'Enemy: Shadow Archer', hint: 'Ranged enemy type in the 3D battle world.', defaultPrompt: 'shadow archer enemy, hooded, holding a bow, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true },
-  { key: 'enemy_aura_hunter', label: 'Enemy: Aura Hunter', hint: 'Enemy type in the 3D battle world.', defaultPrompt: 'aura hunter enemy, sleek cyber armor, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true },
-  { key: 'enemy_dark_guardian', label: 'Enemy: Dark Guardian', hint: 'Tanky enemy type in the 3D battle world.', defaultPrompt: 'heavy dark guardian enemy, huge shield, bulky armor, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true },
-  { key: 'enemy_demon_beast', label: 'Enemy: Demon Beast', hint: 'Monster enemy type in the 3D battle world.', defaultPrompt: 'demon beast monster enemy, clawed, menacing, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true },
-  { key: 'enemy_mini_boss', label: 'Enemy: Mini Boss', hint: 'Mini-boss enemy type in the 3D battle world.', defaultPrompt: 'powerful mini boss enemy, ornate dark armor, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true },
-  { key: 'aura', label: 'A.U.R.A. (AI Companion)', hint: 'Shown in dialogue when A.U.R.A. speaks.', defaultPrompt: 'friendly holographic AI orb companion, glowing cyan, game concept art', removeBackground: false },
-  { key: 'npc', label: 'Side Character (NPC)', hint: 'Shown in dialogue for Commander Jax, etc.', defaultPrompt: 'game NPC character portrait, military commander, game concept art', removeBackground: false },
-  { key: 'background', label: 'Battle Background / Location', hint: 'Backdrop shown behind the 3D battle world.', defaultPrompt: 'dark futuristic ruined city battle arena, dramatic lighting, wide background concept art', removeBackground: false },
+export const PORTRAIT_SLOTS: { key: PortraitKey; label: string; hint: string; defaultPrompt: string; removeBackground: boolean; inputMode: 'actions' | 'upload' | 'prompt' }[] = [
+  { key: 'hero', label: 'Hero (Aura Vanguard)', hint: 'The player character — used in the 3D battle world, HUD, menu and dialogue.', defaultPrompt: 'chibi style armored warrior hero, blue and gold energy armor, holding a glowing axe, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true, inputMode: 'actions' },
+  { key: 'villain', label: 'Villain (The Dread Lord)', hint: 'The final boss — used in the 3D battle world, menu and dialogue.', defaultPrompt: 'dark armored villain, glowing red eyes, spiked black and crimson armor, full body, menacing, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true, inputMode: 'actions' },
+  { key: 'enemy_dark_soldier', label: 'Enemy: Dark Soldier', hint: 'Common enemy type in the 3D battle world.', defaultPrompt: 'dark soldier grunt enemy, black armor, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true, inputMode: 'actions' },
+  { key: 'enemy_shadow_archer', label: 'Enemy: Shadow Archer', hint: 'Ranged enemy type in the 3D battle world.', defaultPrompt: 'shadow archer enemy, hooded, holding a bow, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true, inputMode: 'actions' },
+  { key: 'enemy_aura_hunter', label: 'Enemy: Aura Hunter', hint: 'Enemy type in the 3D battle world.', defaultPrompt: 'aura hunter enemy, sleek cyber armor, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true, inputMode: 'actions' },
+  { key: 'enemy_dark_guardian', label: 'Enemy: Dark Guardian', hint: 'Tanky enemy type in the 3D battle world.', defaultPrompt: 'heavy dark guardian enemy, huge shield, bulky armor, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true, inputMode: 'actions' },
+  { key: 'enemy_demon_beast', label: 'Enemy: Demon Beast', hint: 'Monster enemy type in the 3D battle world.', defaultPrompt: 'demon beast monster enemy, clawed, menacing, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true, inputMode: 'actions' },
+  { key: 'enemy_mini_boss', label: 'Enemy: Mini Boss', hint: 'Mini-boss enemy type in the 3D battle world.', defaultPrompt: 'powerful mini boss enemy, ornate dark armor, full body, game character concept art, solid plain white studio background, no scenery, no props behind character', removeBackground: true, inputMode: 'actions' },
+  { key: 'aura', label: 'A.U.R.A. (AI Companion)', hint: 'Shown in dialogue when A.U.R.A. speaks.', defaultPrompt: 'friendly holographic AI orb companion, glowing cyan, game concept art', removeBackground: false, inputMode: 'prompt' },
+  { key: 'npc', label: 'Side Character (NPC)', hint: 'Shown in dialogue for Commander Jax, etc.', defaultPrompt: 'game NPC character portrait, military commander, game concept art', removeBackground: false, inputMode: 'prompt' },
+  { key: 'background', label: 'Battle Background / Location', hint: 'Backdrop shown behind the 3D battle world. Upload a scene from pixler.dev\'s Background generator.', defaultPrompt: 'dark futuristic ruined city battle arena, dramatic lighting, wide background concept art', removeBackground: false, inputMode: 'upload' },
 ];
 
 const STORAGE_PREFIX = 'legend-awakening-portrait:';
@@ -380,6 +380,34 @@ export async function generateCharacterFrames(
   return frames;
 }
 
+/**
+ * Uploads a single admin-provided image (e.g. a scene from pixler.dev's Background
+ * generator) directly for a non-animated slot like 'background', 'aura' or 'npc'.
+ */
+export async function uploadSinglePortrait(key: PortraitKey, file: File): Promise<string> {
+  const path = `${key}-${Date.now()}.png`;
+  const { error: uploadError } = await supabase.storage
+    .from(CHARACTER_PHOTOS_BUCKET)
+    .upload(path, file, { contentType: file.type || 'image/png', upsert: true, cacheControl: '3600' });
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage.from(CHARACTER_PHOTOS_BUCKET).getPublicUrl(path);
+  const url = data.publicUrl;
+
+  const label = PORTRAIT_SLOTS.find((s) => s.key === key)?.label ?? key;
+  const { error: dbError } = await supabase.from('characters').upsert({
+    slot: key,
+    name: label,
+    photo_url: url,
+    updated_at: new Date().toISOString(),
+  });
+  if (dbError) throw dbError;
+
+  writeLocal(key, { url, prompt: cache[key]?.prompt ?? null, frames: cache[key]?.frames ?? null });
+  notify();
+  return url;
+}
+
 export async function resetPortrait(key: PortraitKey): Promise<void> {
   const { error } = await supabase
     .from('characters')
@@ -390,36 +418,78 @@ export async function resetPortrait(key: PortraitKey): Promise<void> {
 }
 
 /**
+ * Slices a sprite-sheet image (multiple animation frames laid out in a single horizontal
+ * strip — the typical export format from tools like pixler.dev) into N individual frame
+ * Blobs. If frameCount is 1, the whole image is returned as a single frame (no slicing).
+ */
+async function sliceSpriteSheet(file: File, frameCount: number): Promise<Blob[]> {
+  if (frameCount <= 1) return [file];
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error('Could not read that image'));
+    el.src = URL.createObjectURL(file);
+  });
+
+  const frameWidth = img.naturalWidth / frameCount;
+  const frameHeight = img.naturalHeight;
+  const blobs: Blob[] = [];
+
+  for (let i = 0; i < frameCount; i++) {
+    const canvas = document.createElement('canvas');
+    canvas.width = frameWidth;
+    canvas.height = frameHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas not supported');
+    ctx.drawImage(img, i * frameWidth, 0, frameWidth, frameHeight, 0, 0, frameWidth, frameHeight);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), 'image/png'));
+    if (blob) blobs.push(blob);
+  }
+
+  return blobs.length > 0 ? blobs : [file];
+}
+
+/**
  * Uploads an admin-provided image file (e.g. generated on pixler.dev or another sprite
  * tool) for a single action (idle/walk/attack/jump) of a character slot, merging it into
  * that slot's existing frame set. Files from dedicated sprite generators already come with
- * a transparent background, so no background removal is applied here.
+ * a transparent background, so no background removal is applied here. If frameCount > 1,
+ * the image is treated as a sprite sheet and sliced into that many individual frames.
  */
-export async function uploadActionFrame(key: PortraitKey, action: SpriteAction, file: File): Promise<string> {
-  const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
-  const path = `${key}-${action}-${Date.now()}.${ext}`;
-  const { error: uploadError } = await supabase.storage
-    .from(CHARACTER_PHOTOS_BUCKET)
-    .upload(path, file, { contentType: file.type || 'image/png', upsert: true, cacheControl: '3600' });
-  if (uploadError) throw uploadError;
+export async function uploadActionFrame(
+  key: PortraitKey,
+  action: SpriteAction,
+  file: File,
+  frameCount: number = 1
+): Promise<string[]> {
+  const slices = await sliceSpriteSheet(file, frameCount);
+  const urls: string[] = [];
 
-  const { data } = supabase.storage.from(CHARACTER_PHOTOS_BUCKET).getPublicUrl(path);
-  const url = data.publicUrl;
+  for (let i = 0; i < slices.length; i++) {
+    const path = `${key}-${action}-${Date.now()}-${i}.png`;
+    const { error: uploadError } = await supabase.storage
+      .from(CHARACTER_PHOTOS_BUCKET)
+      .upload(path, slices[i], { contentType: 'image/png', upsert: true, cacheControl: '3600' });
+    if (uploadError) throw uploadError;
+    const { data } = supabase.storage.from(CHARACTER_PHOTOS_BUCKET).getPublicUrl(path);
+    urls.push(data.publicUrl);
+  }
 
   const existingFrames = cache[key]?.frames ?? ({ idle: [], walk: [], attack: [], jump: [] } as ActionFrames);
-  const nextFrames: ActionFrames = { ...existingFrames, [action]: [url] };
+  const nextFrames: ActionFrames = { ...existingFrames, [action]: urls };
 
   const label = PORTRAIT_SLOTS.find((s) => s.key === key)?.label ?? key;
   const { error: dbError } = await supabase.from('characters').upsert({
     slot: key,
     name: label,
-    photo_url: nextFrames.idle[0] ?? url,
+    photo_url: nextFrames.idle[0] ?? urls[0],
     frames: nextFrames,
     updated_at: new Date().toISOString(),
   });
   if (dbError) throw dbError;
 
-  writeLocal(key, { url: nextFrames.idle[0] ?? url, prompt: cache[key]?.prompt ?? null, frames: nextFrames });
+  writeLocal(key, { url: nextFrames.idle[0] ?? urls[0], prompt: cache[key]?.prompt ?? null, frames: nextFrames });
   notify();
-  return url;
+  return urls;
 }

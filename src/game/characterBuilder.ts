@@ -45,6 +45,12 @@ export interface CharacterRig {
   spriteCurrentAction?: 'idle' | 'walk' | 'attack' | 'jump';
   spriteFrameIndex?: number;
   spriteFrameTimer?: number;
+  /** The THREE.Sprite object itself (its parent is meshGroup) and the fixed world-space
+   *  height it should always render at — used to rescale the sprite's width whenever the
+   *  frame texture changes, since different uploaded action images may have different
+   *  aspect ratios (e.g. idle vs. a wider attack sprite-sheet frame). */
+  sprite?: THREE.Sprite;
+  spriteTargetHeight?: number;
   /** Countdown timer (seconds) driving a brief forward lunge pulse on enemy attack for
    *  sprite-based enemies (see updateEnemies in GameEngine.ts). */
   attackPulseTime?: number;
@@ -1142,6 +1148,8 @@ function mountBillboardSprite(
       rig.needsProceduralMotion = true;
       rig.isSprite = true;
       rig.spriteMaterial = material;
+      rig.sprite = sprite;
+      rig.spriteTargetHeight = targetHeight;
       rig.isAssetLoaded = true;
 
       // If a full idle/walk/attack/jump animation set was generated, preload every frame

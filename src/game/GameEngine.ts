@@ -940,6 +940,16 @@ export class GameEngine {
     if (frame && rig.spriteMaterial.map !== frame) {
       rig.spriteMaterial.map = frame;
       rig.spriteMaterial.needsUpdate = true;
+      // Different uploaded action images can have different aspect ratios (e.g. a wider
+      // sprite-sheet frame vs. a tall idle portrait) — keep height fixed and rescale width
+      // so the character doesn't visually stretch/squash when the action changes.
+      if (rig.sprite && rig.spriteTargetHeight) {
+        const img = frame.image as { width?: number; height?: number } | undefined;
+        if (img?.width && img?.height) {
+          const aspect = img.width / img.height;
+          rig.sprite.scale.set(rig.spriteTargetHeight * aspect, rig.spriteTargetHeight, 1);
+        }
+      }
     }
   }
 

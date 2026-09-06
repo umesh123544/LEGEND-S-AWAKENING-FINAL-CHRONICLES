@@ -9,6 +9,7 @@ import {
   getFrames,
   generatePortrait,
   uploadActionFrame,
+  uploadSinglePortrait,
   resetPortrait,
 } from '../game/portraits';
 
@@ -109,9 +110,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
           className="flex items-center justify-between gap-2 text-xs sm:text-sm text-cyan-300/90 glass-panel border-cyan-400/30 rounded-xl px-4 py-3 mb-6 leading-relaxed hover:border-cyan-400/60 transition-colors"
         >
           <span>
-            For Hero/Villain/Enemies: open <span className="font-bold">pixler.dev</span> (free, no signup),
-            generate an <span className="font-bold">idle / walk / attack / jump</span> sprite for the character, then
-            upload each image below. Transparent background comes built-in.
+            Open <span className="font-bold">pixler.dev</span> (free, no signup) to generate characters and
+            backgrounds, then upload the images below. If pixler gives you a{' '}
+            <span className="font-bold">multi-frame sprite sheet</span> (several poses side by side in one image),
+            set the frame count so it gets sliced correctly — otherwise leave it at 1.
           </span>
           <ExternalLink className="w-4 h-4 shrink-0" />
         </a>
@@ -125,7 +127,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
               hint={slot.hint}
               defaultPrompt={slot.defaultPrompt}
               wide={slot.key === 'background'}
-              animated={slot.removeBackground}
+              inputMode={slot.inputMode}
             />
           ))}
         </div>
@@ -140,14 +142,21 @@ const PortraitSlotEditor: React.FC<{
   hint: string;
   defaultPrompt: string;
   wide: boolean;
-  animated: boolean;
-}> = ({ slotKey, label, hint, defaultPrompt, wide, animated }) => {
+  inputMode: 'actions' | 'upload' | 'prompt';
+}> = ({ slotKey, label, hint, defaultPrompt, wide, inputMode }) => {
   const [preview, setPreview] = useState<string | null>(() => getPortrait(slotKey));
   const [prompt, setPrompt] = useState<string>(() => getPortraitPrompt(slotKey) || defaultPrompt);
   const [error, setError] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [uploadingAction, setUploadingAction] = useState<SpriteAction | null>(null);
   const [frames, setFrames] = useState(() => getFrames(slotKey));
+  const [frameCounts, setFrameCounts] = useState<Record<SpriteAction, number>>({
+    idle: 1,
+    walk: 1,
+    attack: 1,
+    jump: 1,
+  });
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -167,6 +176,25 @@ const PortraitSlotEditor: React.FC<{
     }
   };
 
+  const handleSingleUpload = async (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setError('Please choose an image file.');
+      return;
+    }
+    setError('');
+    setIsUploading(true);
+    try {
+      const url = await uploadSinglePortrait(slotKey, file);
+      setPreview(url);
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : 'Upload failed — try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleActionUpload = async (action: SpriteAction, file: File | undefined) => {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
@@ -176,7 +204,7 @@ const PortraitSlotEditor: React.FC<{
     setError('');
     setUploadingAction(action);
     try {
-      await uploadActionFrame(slotKey, action, file);
+      await uploadActionFrame(slotKey, action, file, frameCounts[action]);
       setFrames(getFrames(slotKey));
       setPreview(getPortrait(slotKey));
     } catch (err) {
@@ -231,38 +259,75 @@ const PortraitSlotEditor: React.FC<{
         )}
       </div>
 
-      {animated ? (
+      {inputMode === 'actions' && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {ACTIONS.map(({ key: action, label: actionLabel }) => {
             const hasFrame = !!frames?.[action]?.length;
             const busy = uploadingAction === action;
             return (
-              <label
+              <div
                 key={action}
-                className={`cursor-pointer rounded-lg border px-2 py-2 flex flex-col items-center gap-1 text-[11px] font-bold uppercase tracking-wide transition-colors ${
+                className={`rounded-lg border px-2 py-2 flex flex-col items-center gap-1 text-[11px] font-bold uppercase tracking-wide transition-colors ${
                   hasFrame
                     ? 'border-cyan-400/50 bg-cyan-400/10 text-cyan-300'
-                    : 'border-white/10 bg-slate-900 text-slate-400 hover:border-cyan-400/30'
+                    : 'border-white/10 bg-slate-900 text-slate-400'
                 }`}
               >
-                {hasFrame ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Upload className="w-3.5 h-3.5" />}
-                {busy ? 'Uploading…' : actionLabel}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={busy}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    handleActionUpload(action, file);
-                    e.target.value = '';
-                  }}
-                />
-              </label>
+                <label className="cursor-pointer flex flex-col items-center gap-1 w-full">
+                  {hasFrame ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Upload className="w-3.5 h-3.5" />}
+                  {busy ? 'Uploading…' : actionLabel}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={busy}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      handleActionUpload(action, file);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                <div className="flex items-center gap-1 mt-1 normal-case font-normal text-slate-500">
+                  <span className="text-[9px]">Frames:</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={16}
+                    value={frameCounts[action]}
+                    onChange={(e) =>
+                      setFrameCounts((prev) => ({
+                        ...prev,
+                        [action]: Math.max(1, Math.min(16, parseInt(e.target.value) || 1)),
+                      }))
+                    }
+                    className="w-9 px-1 py-0.5 rounded bg-black/40 border border-white/10 text-[10px] text-center text-white outline-none"
+                  />
+                </div>
+              </div>
             );
           })}
         </div>
-      ) : (
+      )}
+
+      {inputMode === 'upload' && (
+        <label className="cursor-pointer self-start px-3 py-1.5 rounded-lg bg-cyan-400 text-slate-950 text-[11px] font-black uppercase tracking-wider hover:brightness-110 flex items-center gap-1.5">
+          <Upload className="w-3 h-3" /> {isUploading ? 'Uploading…' : preview ? 'Replace Image' : 'Upload Image'}
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            disabled={isUploading}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              handleSingleUpload(file);
+              e.target.value = '';
+            }}
+          />
+        </label>
+      )}
+
+      {inputMode === 'prompt' && (
         <>
           <textarea
             value={prompt}
