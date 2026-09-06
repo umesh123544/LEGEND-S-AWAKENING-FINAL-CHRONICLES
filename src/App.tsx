@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { GameEngine } from './game/GameEngine';
+import { Game2DEngine as GameEngine } from './game/Game2DEngine';
 import { soundManager } from './game/audio';
 import {
   CHAPTERS,
