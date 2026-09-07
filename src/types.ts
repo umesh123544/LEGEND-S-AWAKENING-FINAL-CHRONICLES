@@ -64,8 +64,8 @@ export interface DamageNumber {
 }
 
 export interface DialogueMessage {
-  speaker: 'Hero' | 'A.U.R.A.' | 'The Dread Lord' | 'Commander Jax' | 'Shadow Drone';
-  portrait: 'hero' | 'aura' | 'villain' | 'npc';
+  speaker: 'Ram' | 'Hanuman' | 'Ravan' | 'Lakshman' | 'Jatayu' | 'Sita';
+  portrait: 'hero' | 'aura' | 'villain' | 'npc' | 'sita';
   text: string;
   voicePitch?: number;
 }

@@ -39,8 +39,8 @@ export const ChapterVictoryModal: React.FC<ChapterVictoryModalProps> = ({
           </div>
           <p className="text-slate-200 text-xs sm:text-sm leading-relaxed">
             {chapterId === 6
-              ? 'The Dread Lord has been cast back into the abyssal void! The AURA resonance has repaired the fabric of reality. You have fulfilled the Legend!'
-              : 'Hostile forces neutralized. AURA data core secured. The pathway to the next sector is unlocked.'}
+              ? 'Ravan has fallen, and Sita is free at last! Dharma is restored to the world. Your journey through the Ramayan is complete!'
+              : 'The Rakshasa forces here are defeated. The path toward Lanka lies open before you.'}
           </p>
         </div>
 

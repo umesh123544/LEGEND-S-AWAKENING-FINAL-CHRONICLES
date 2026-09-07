@@ -48,7 +48,7 @@ export const AbilitiesModal: React.FC<AbilitiesModalProps> = ({ onClose }) => {
       desc: 'Hero leaps into the air and hammers the ground, triggering an expanding radial seismic shockwave that staggers targets.',
     },
     {
-      name: "LEGEND'S AWAKENING (ULTIMATE)",
+      name: "RAM'S DIVINE ASTRA (ULTIMATE)",
       hotkey: 'KEY [R]',
       icon: Sparkles,
       color: 'text-amber-300',

@@ -53,7 +53,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               )}
             </div>
             <span className="text-xs font-bold text-cyan-400 mt-2 font-['Orbitron'] tracking-[0.3em] uppercase italic">
-              Hero // Aura Vanguard
+              Ram // Prince of Ayodhya
             </span>
           </div>
         </div>
@@ -73,7 +73,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               )}
             </div>
             <span className="text-xs font-bold text-red-400 mt-2 font-['Orbitron'] tracking-[0.3em] uppercase italic">
-              Villain // Dread Lord
+              Ravan // King of Lanka
             </span>
           </div>
         </div>
@@ -112,19 +112,19 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       {/* Center Cinematic Title & Branding */}
       <div className="relative z-20 text-center max-w-4xl mx-auto px-4 my-auto">
         <div className="inline-block px-3 sm:px-4 py-1 rounded-full glass-panel border-cyan-400/30 text-cyan-300 text-[10px] sm:text-xs font-bold tracking-[0.15em] sm:tracking-[0.4em] uppercase mb-4 shadow-sm max-w-full">
-          3D Action-Adventure RPG
+          Mythological Action RPG
         </div>
 
         <h1 className="text-3xl sm:text-6xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-100 to-slate-400 font-['Orbitron'] tracking-tight break-words px-1">
-          LEGEND'S AWAKENING
+          RAMAYAN
         </h1>
 
         <h2 className="text-base sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-slate-200 to-red-500 font-['Orbitron'] tracking-[0.08em] sm:tracking-[0.3em] uppercase mt-2 drop-shadow-[0_0_20px_rgba(34,211,238,0.4)] break-words px-1">
-          FINAL CHRONICLES
+          RESCUE OF SITA
         </h2>
 
         <p className="text-xs sm:text-base text-slate-400 max-w-xl mx-auto mt-4 leading-relaxed font-sans px-2">
-          Reclaim the ancient AURA energy. Master high-frequency energy sword combos, holographic shields, and devastating powers to confront The Dread Lord.
+          Banished to the forest for fourteen years, Ram must master the bow, rally the Vanara army, and cross the ocean to rescue Sita from Ravan, the demon king of Lanka.
         </p>
 
         {/* Action Buttons Stack */}
@@ -194,7 +194,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
       {/* Footer Info (desktop only — kept off mobile to avoid clutter/overlap) */}
       <div className="hidden md:flex relative z-20 px-6 sm:px-10 pb-6 flex-row justify-between items-center gap-2 text-xs text-slate-500 font-mono">
-        <div>3D WebGL Action Combat System // Three.js & Web Audio</div>
+        <div>2D Action Combat System // Canvas & Web Audio</div>
         <div className="text-cyan-400/60">Controls: WASD + Mouse | Full Mobile Touch Support</div>
       </div>
     </div>

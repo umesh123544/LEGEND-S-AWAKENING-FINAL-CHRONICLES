@@ -21,11 +21,11 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({ onRetry, onMainMen
           NEURAL LINK SEVERED
         </h2>
         <p className="text-xs font-bold text-red-400/80 uppercase tracking-[0.3em] mt-1">
-          AURA SUIT CRITICAL FAILURE
+          FALLEN IN BATTLE
         </p>
 
         <p className="my-6 text-slate-300 text-xs sm:text-sm leading-relaxed">
-          Your armor absorbed lethal kinetic feedback. The Dread Lord’s dark forces continue their advance.
+          Ram falls, wounded by the Rakshasa horde. Ravan's forces press onward while Sita waits.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3">

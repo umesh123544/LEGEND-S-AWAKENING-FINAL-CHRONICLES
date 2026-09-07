@@ -27,7 +27,6 @@ import { VirtualJoystick } from './components/VirtualJoystick';
 import { LoadingScreen } from './components/LoadingScreen';
 import { AdminPanel } from './components/AdminPanel';
 import { initPortraitSync } from './game/portraits';
-import { assetManager } from './game/AssetManager';
 
 export default function App() {
   // Screen States
@@ -35,7 +34,7 @@ export default function App() {
   const [isPaused, setIsPaused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const [loadingStatus, setLoadingStatus] = useState('Initializing A.U.R.A. Matrix...');
+  const [loadingStatus, setLoadingStatus] = useState('Awakening the Spirit of Hanuman...');
 
   // Start syncing character portraits from Supabase as soon as the app mounts, so
   // admin-uploaded photos show up for every player without needing a rebuild/redeploy.
@@ -118,7 +117,7 @@ export default function App() {
     (chapterId: number) => {
       setIsLoading(true);
       setLoadingProgress(10);
-      setLoadingStatus('Initializing A.U.R.A. 3D Combat Pipeline...');
+      setLoadingStatus('Preparing the Path to Lanka...');
 
       // Progressive simulated and asset-tracked loading stages
       setTimeout(() => {
@@ -133,7 +132,7 @@ export default function App() {
 
       setTimeout(() => {
         setLoadingProgress(92);
-        setLoadingStatus('Calibrating Enemy Entities & Dread Lord AI Systems...');
+        setLoadingStatus('Summoning the Rakshasa Forces of Lanka...');
       }, 1000);
 
       setTimeout(() => {

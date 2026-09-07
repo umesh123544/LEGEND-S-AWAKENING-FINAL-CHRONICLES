@@ -31,11 +31,11 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
 
         {/* Titles */}
         <h1 className="text-3xl sm:text-4xl font-black text-white font-['Orbitron'] tracking-[0.25em] uppercase mb-1">
-          LEGEND'S AWAKENING
+          RAMAYAN
         </h1>
         <h2 className="text-sm font-bold text-cyan-400 tracking-[0.4em] uppercase mb-8 flex items-center justify-center gap-2">
           <Sparkles className="w-4 h-4 text-cyan-400" />
-          FINAL CHRONICLES
+          RESCUE OF SITA
         </h2>
 
         {/* World Loading Subtitle */}

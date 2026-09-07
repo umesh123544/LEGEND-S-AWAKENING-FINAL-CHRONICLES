@@ -76,7 +76,7 @@ export const HUD: React.FC<HUDProps> = ({
           <div className="flex-1 min-w-0">
             <div className="flex justify-between items-end mb-1">
               <span className="text-[11px] sm:text-xs font-bold tracking-widest text-cyan-400 uppercase italic truncate">
-                Aura Vanguard
+                Prince of Ayodhya
               </span>
               <span className="text-[10px] sm:text-[11px] opacity-70 font-mono">
                 LVL {stats.level}
@@ -128,7 +128,7 @@ export const HUD: React.FC<HUDProps> = ({
               </div>
             </div>
             <div className="text-[9px] sm:text-[10px] opacity-60 uppercase tracking-tight sm:tracking-widest text-red-300 font-mono truncate max-w-full text-center">
-              Phase {bossState.phase || 1}: Shadow Resonance
+              Phase {bossState.phase || 1}: Rakshasa Fury
             </div>
           </div>
         ) : (
@@ -344,7 +344,7 @@ export const HUD: React.FC<HUDProps> = ({
               <span className="text-[8px] font-bold font-mono text-cyan-400 mt-0.5">ATTACK</span>
             </button>
 
-            {/* Awaken Ultimate: LEGEND'S AWAKENING (R) */}
+            {/* Awaken Ultimate: RAM'S DIVINE ASTRA (R) */}
             <div className="relative group">
               <div className="absolute -inset-1 sm:-inset-2 bg-cyan-500/25 blur-lg rounded-full" />
               <button
@@ -352,7 +352,7 @@ export const HUD: React.FC<HUDProps> = ({
                 onClick={onAbilityR}
                 disabled={abilityCooldowns.ultimate > 0 || stats.energy < 75}
                 className="w-12 h-12 sm:w-16 sm:h-16 glass-panel rounded-full border-2 border-cyan-400 flex flex-col items-center justify-center relative overflow-hidden active:scale-95 transition-all disabled:opacity-40"
-                title="Legend's Awakening Ultimate [R]"
+                title="Ram's Divine Astra [R]"
               >
                 <div className="absolute inset-0 bg-cyan-500/15 animate-pulse" />
                 <span className="text-[10px] sm:text-xs font-black tracking-tighter text-cyan-400 z-10 uppercase italic">

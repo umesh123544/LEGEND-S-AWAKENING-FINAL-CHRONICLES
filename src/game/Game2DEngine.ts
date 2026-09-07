@@ -52,13 +52,13 @@ const SPRINT_MULT = 1.55;
 const WORLD_WIDTH = 4200;
 
 const ENEMY_BASE_STATS: Record<EnemyType, { hp: number; attack: number; defense: number; speed: number; xp: number; label: string }> = {
-  dark_soldier: { hp: 60, attack: 8, defense: 2, speed: 90, xp: 15, label: 'Dark Soldier' },
-  shadow_archer: { hp: 45, attack: 10, defense: 1, speed: 100, xp: 18, label: 'Shadow Archer' },
-  aura_hunter: { hp: 70, attack: 9, defense: 3, speed: 110, xp: 20, label: 'Aura Hunter' },
-  dark_guardian: { hp: 110, attack: 11, defense: 6, speed: 70, xp: 28, label: 'Dark Guardian' },
-  demon_beast: { hp: 90, attack: 13, defense: 4, speed: 130, xp: 26, label: 'Demon Beast' },
-  mini_boss: { hp: 320, attack: 16, defense: 8, speed: 95, xp: 90, label: 'Dread Lieutenant' },
-  dread_lord: { hp: 900, attack: 22, defense: 12, speed: 100, xp: 500, label: 'The Dread Lord' },
+  dark_soldier: { hp: 60, attack: 8, defense: 2, speed: 90, xp: 15, label: 'Rakshasa Soldier' },
+  shadow_archer: { hp: 45, attack: 10, defense: 1, speed: 100, xp: 18, label: 'Rakshasa Archer' },
+  aura_hunter: { hp: 70, attack: 9, defense: 3, speed: 110, xp: 20, label: 'Rakshasa Hunter' },
+  dark_guardian: { hp: 110, attack: 11, defense: 6, speed: 70, xp: 28, label: 'Rakshasa Guardian' },
+  demon_beast: { hp: 90, attack: 13, defense: 4, speed: 130, xp: 26, label: 'Asura Beast' },
+  mini_boss: { hp: 320, attack: 16, defense: 8, speed: 95, xp: 90, label: 'Rakshasa General' },
+  dread_lord: { hp: 900, attack: 22, defense: 12, speed: 100, xp: 500, label: 'Ravan, King of Lanka' },
 };
 
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -118,7 +118,7 @@ export class Game2DEngine {
   private boss: Enemy2D | null = null;
   private chapterComplete = false;
 
-  private heroSprite: Sprite2D = { frames: { idle: [], walk: [], attack: [], jump: [] }, fallbackColor: '#38bdf8', label: 'Hero' };
+  private heroSprite: Sprite2D = { frames: { idle: [], walk: [], attack: [], jump: [] }, fallbackColor: '#2f6fb0', label: 'Ram' };
   private enemySprites: Partial<Record<EnemyType, Sprite2D>> = {};
   private backgroundImg: HTMLImageElement | null = null;
 
@@ -188,7 +188,7 @@ export class Game2DEngine {
   }
 
   private async loadAssets() {
-    this.heroSprite = await this.loadSpriteSet('hero', '#38bdf8', 'Hero');
+    this.heroSprite = await this.loadSpriteSet('hero', '#2f6fb0', 'Ram');
 
     const bgUrl = getPortrait('background' as any);
     if (bgUrl) {
